@@ -111,7 +111,7 @@ Section: editors
 Priority: optional
 Architecture: all
 Depends: default-jre | openjdk-21-jre | java21-runtime
-Maintainer: amadeOS Project <developers@datazuul.org>
+Maintainer: amadeOS Project <developers@datazuul.com>
 Description: Authentic Motif/CDE-styled text editor for amadeOS
  A lightweight, fast tabbed text editor crafted for the amadeOS desktop
  environment with classic 3D beveled aesthetics, syntax line numbers,

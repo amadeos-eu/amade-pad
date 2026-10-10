@@ -57,3 +57,4 @@ class EditorTabTest {
         assertEquals("Step 1", tab.getTextArea().getText());
     }
 }
+

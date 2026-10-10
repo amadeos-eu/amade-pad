@@ -156,3 +156,4 @@ public final class FindReplaceDialog extends JDialog {
         }
     }
 }
+

@@ -54,4 +54,5 @@ java -jar build/libs/amade-pad-0.1.0.jar
 
 ## License
 
-MIT License. Copyright &copy; 2026 datazuul.org.
+MIT License. Copyright &copy; 2026 datazuul.com.
+

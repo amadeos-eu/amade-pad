@@ -426,8 +426,9 @@ public final class AmadePadApplication extends JFrame {
                 "<html><center><h2>amade-pad 0.1.0</h2>"
                         + "<p>An authentic Motif/CDE-style text editor</p>"
                         + "<p>Designed for the <b>amadeOS</b> desktop environment</p><br>"
-                        + "<small>&copy; 2026 datazuul.org &bull; Wolfgang Amadeus Mozart Edition</small></center></html>",
+                        + "<small>&copy; 2026 datazuul.com &bull; Wolfgang Amadeus Mozart Edition</small></center></html>",
                 "About amade-pad",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 }
+

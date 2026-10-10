@@ -140,3 +140,4 @@ public final class EditorTab extends JPanel {
         scrollPane.setRowHeaderView(visible ? lineNumbers : null);
     }
 }
+

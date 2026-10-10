@@ -114,3 +114,4 @@ public final class LineNumberMargin extends JComponent implements DocumentListen
         repaint();
     }
 }
+
