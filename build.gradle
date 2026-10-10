@@ -1,0 +1,154 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.datazuul.amadeos'
+version = '0.1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    archiveBaseName = 'amade-pad'
+    manifest {
+        attributes(
+            'Main-Class': 'org.datazuul.amadeos.pad.AmadePadApplication',
+            'Implementation-Title': 'amade-pad',
+            'Implementation-Version': project.version
+        )
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register('deb') {
+    dependsOn jar
+    description = 'Builds a standard Debian (.deb) package for amade-pad'
+    group = 'distribution'
+
+    doLast {
+        def buildDirFile = layout.buildDirectory.get().asFile
+        def stagingDir = new File(buildDirFile, "deb-staging")
+        delete(stagingDir)
+        
+        def optDir = new File(stagingDir, "opt/amade-pad")
+        def binDir = new File(stagingDir, "usr/bin")
+        def appDir = new File(stagingDir, "usr/share/applications")
+        def iconDir = new File(stagingDir, "usr/share/icons/hicolor/48x48/apps")
+        def debianDir = new File(stagingDir, "DEBIAN")
+        def distDir = new File(buildDirFile, "distributions")
+
+        optDir.mkdirs()
+        binDir.mkdirs()
+        appDir.mkdirs()
+        iconDir.mkdirs()
+        debianDir.mkdirs()
+        distDir.mkdirs()
+
+        // 1. Copy application JAR
+        copy {
+            from jar.archiveFile
+            into optDir
+            rename { 'amade-pad.jar' }
+        }
+
+        // 2. Create launcher script
+        def launcher = new File(binDir, "amade-pad")
+        launcher.text = """#!/bin/sh
+exec /usr/bin/java -jar /opt/amade-pad/amade-pad.jar "\$@"
+"""
+        launcher.setExecutable(true, false)
+
+        // 3. Create desktop entry
+        def desktopFile = new File(appDir, "amade-pad.desktop")
+        desktopFile.text = """[Desktop Entry]
+Type=Application
+Version=1.0
+Name=amadeOS Text Editor
+GenericName=Text Editor
+Comment=Lightweight Motif/CDE-style text editor
+Icon=amade-pad
+Exec=/usr/bin/amade-pad %F
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/plain;text/x-java;text/x-c;text/x-shellscript;
+StartupNotify=true
+"""
+
+        // 4. Generate/copy application icon
+        def iconSource = file("src/main/resources/icons/amade-pad.png")
+        if (iconSource.exists()) {
+            copy {
+                from iconSource
+                into iconDir
+            }
+        }
+
+        // 5. Create Debian package control file
+        def controlFile = new File(debianDir, "control")
+        controlFile.text = """Package: amade-pad
+Version: ${project.version}
+Section: editors
+Priority: optional
+Architecture: all
+Depends: default-jre | openjdk-21-jre | java21-runtime
+Maintainer: amadeOS Project <developers@datazuul.org>
+Description: Authentic Motif/CDE-styled text editor for amadeOS
+ A lightweight, fast tabbed text editor crafted for the amadeOS desktop
+ environment with classic 3D beveled aesthetics, syntax line numbers,
+ and clean workstation responsiveness.
+"""
+
+        // 6. Build .deb package using dpkg-deb
+        def debFile = new File(distDir, "amade-pad_${project.version}_all.deb")
+        def process = new ProcessBuilder("dpkg-deb", "--root-owner-group", "--build", stagingDir.absolutePath, debFile.absolutePath)
+                .redirectErrorStream(true)
+                .start()
+        process.inputStream.eachLine { println it }
+        int exitCode = process.waitFor()
+        if (exitCode != 0) {
+            throw new GradleException("dpkg-deb failed with exit code $exitCode")
+        }
+
+        println "[deb] Successfully created Debian package: ${debFile.absolutePath}"
+    }
+}
+
+tasks.register('installToAmadeOs') {
+    dependsOn 'deb'
+    description = 'Builds and drops the .deb package into amadeos/config/packages.chroot/'
+    group = 'distribution'
+
+    doLast {
+        def targetDir = file("../amadeos/config/packages.chroot")
+        if (!targetDir.exists()) {
+            targetDir.mkdirs()
+        }
+        def buildDirFile = layout.buildDirectory.get().asFile
+        def debFile = new File(buildDirFile, "distributions/amade-pad_${project.version}_all.deb")
+        copy {
+            from debFile
+            into targetDir
+        }
+        println "[installToAmadeOs] Copied ${debFile.name} to ${targetDir.absolutePath}"
+    }
+}
