@@ -14,7 +14,10 @@ bin/
 .vscode/
 .DS_Store
 
-# Logs
+# Logs & Editor scratch/lock files
 *.log
 *.tmp
+*~
+.*~
+.LCK*
 
