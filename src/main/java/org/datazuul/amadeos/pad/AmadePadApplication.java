@@ -51,9 +51,7 @@ public final class AmadePadApplication extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            } catch (Exception ignored) {}
+            AmadeUI.install();
 
             AmadePadApplication app = new AmadePadApplication();
             if (args != null && args.length > 0) {
