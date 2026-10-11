@@ -313,7 +313,8 @@ public final class AmadeUI {
             } else if (isHovered) {
                 bg = SOFT_HIGHLIGHT;
             } else {
-                bg = BASE;
+                Color customBg = b.getBackground();
+                bg = (customBg != null) ? customBg : BASE;
             }
 
             g2.setColor(bg);
