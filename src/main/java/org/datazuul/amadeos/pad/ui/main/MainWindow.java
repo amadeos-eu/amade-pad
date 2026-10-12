@@ -20,7 +20,7 @@ import java.util.List;
 
 public final class MainWindow extends JFrame implements MainView {
     private final JTabbedPane tabs = new JTabbedPane();
-    private final JLabel status = new JLabel("Line: 1, Col: 1 | UTF-8 | 0 chars");
+    private final JLabel status = new JLabel("Line: 1, Col: 1 | UTF-8 | LF | 0 chars");
     private final FindReplaceDialog search;
 
     @Inject
@@ -140,6 +140,17 @@ public final class MainWindow extends JFrame implements MainView {
     }
 
     @Override
+    public boolean confirmSaveAsUtf8(String charsetName) {
+        EdtExecutor.requireEdt();
+        JTextArea text = new JTextArea("The document contains characters that cannot be stored as " + charsetName
+                + ".\nSave it as UTF-8 instead?");
+        text.setEditable(false);
+        text.setBackground(AmadeUI.BASE);
+        return JOptionPane.showConfirmDialog(this, text, "Save as UTF-8", JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
+    }
+
+    @Override
     public void showSearch(boolean replace) {
         EdtExecutor.requireEdt();
         if (activeEditor() != null) search.showFor(replace);
@@ -181,7 +192,8 @@ public final class MainWindow extends JFrame implements MainView {
             int caret = Math.min(area.getCaretPosition(), area.getDocument().getLength());
             int line = area.getLineOfOffset(caret);
             int column = caret - area.getLineStartOffset(line) + 1;
-            status.setText("Line: " + (line + 1) + ", Col: " + column + " | UTF-8 | " + area.getDocument().getLength() + " chars");
+            status.setText("Line: " + (line + 1) + ", Col: " + column + " | " + editor.state().format().label()
+                    + " | " + area.getDocument().getLength() + " chars");
         } catch (BadLocationException e) {
             throw new IllegalStateException("Invalid caret position", e);
         }

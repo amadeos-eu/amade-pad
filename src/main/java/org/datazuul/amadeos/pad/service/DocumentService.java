@@ -1,6 +1,7 @@
 package org.datazuul.amadeos.pad.service;
 
 import com.google.inject.Inject;
+import org.datazuul.amadeos.pad.domain.TextDocument;
 import org.datazuul.amadeos.pad.repository.DocumentRepository;
 
 import java.io.IOException;
@@ -20,7 +21,7 @@ public final class DocumentService {
         this.executor = executor;
     }
 
-    public CompletableFuture<String> open(Path path) {
+    public CompletableFuture<TextDocument> open(Path path) {
         Objects.requireNonNull(path);
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -31,12 +32,12 @@ public final class DocumentService {
         }, executor);
     }
 
-    public CompletableFuture<Void> save(Path path, String content) {
+    public CompletableFuture<Void> save(Path path, TextDocument document) {
         Objects.requireNonNull(path);
-        Objects.requireNonNull(content);
+        Objects.requireNonNull(document);
         return CompletableFuture.runAsync(() -> {
             try {
-                repository.write(path, content);
+                repository.write(path, document);
             } catch (IOException e) {
                 throw new CompletionException(e);
             }

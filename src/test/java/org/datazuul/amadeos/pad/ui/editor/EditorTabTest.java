@@ -2,6 +2,8 @@ package org.datazuul.amadeos.pad.ui.editor;
 
 import java.nio.file.Path;
 import javax.swing.SwingUtilities;
+import org.datazuul.amadeos.pad.domain.TextDocument;
+import org.datazuul.amadeos.pad.domain.TextFormat;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,17 +26,17 @@ class EditorTabTest {
         SwingUtilities.invokeAndWait(() -> {
             EditorTab tab = new EditorTab();
             Path path = Path.of("sample.txt");
-            tab.load(path, "Initial content");
+            tab.load(path, new TextDocument("Initial content", TextFormat.DEFAULT));
             assertEquals("sample.txt", tab.state().title());
             assertEquals("Initial content", tab.text());
             assertFalse(tab.state().isModified());
             assertFalse(tab.getUndoManager().canUndo());
             tab.getTextArea().setText("Updated content");
             long revision = tab.state().revision();
-            tab.saved(path, revision);
+            tab.saved(path, revision, TextFormat.DEFAULT);
             assertFalse(tab.state().isModified());
             tab.getTextArea().append(" changed while saving");
-            tab.saved(path, revision);
+            tab.saved(path, revision, TextFormat.DEFAULT);
             assertTrue(tab.state().isModified());
         });
     }

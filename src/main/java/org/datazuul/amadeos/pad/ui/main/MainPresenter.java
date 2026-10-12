@@ -1,6 +1,8 @@
 package org.datazuul.amadeos.pad.ui.main;
 
 import com.google.inject.Inject;
+import org.datazuul.amadeos.pad.domain.TextDocument;
+import org.datazuul.amadeos.pad.domain.UnencodableTextException;
 import org.datazuul.amadeos.pad.service.DocumentService;
 import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorView;
@@ -97,23 +99,36 @@ public final class MainPresenter {
         if (saveAs || path == null) path = view.chooseSavePath(path);
         if (path == null) return CompletableFuture.completedFuture(false);
         Path target = path.toAbsolutePath().normalize();
-        String content = editor.text();
+        TextDocument snapshot = new TextDocument(editor.text(), editor.state().format());
         long revision = editor.state().revision();
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         saves.put(editor, result);
-        documents.save(target, content).handleAsync((unused, error) -> {
-            if (error != null) {
-                report("Failed to save file", error);
-                return false;
-            }
-            editor.saved(target, revision);
-            return true;
-        }, edt).whenCompleteAsync((success, error) -> {
+        write(editor, target, snapshot, revision).whenCompleteAsync((success, error) -> {
             saves.remove(editor);
             if (error != null) result.completeExceptionally(error);
             else result.complete(success);
         }, edt);
         return result;
+    }
+
+    /**
+     * Writes the snapshot; if its charset cannot store the text, offers to save as UTF-8 instead
+     * of replacing characters.
+     */
+    private CompletableFuture<Boolean> write(EditorView editor, Path target, TextDocument snapshot, long revision) {
+        return documents.save(target, snapshot).handleAsync((unused, error) -> {
+            if (error == null) {
+                editor.saved(target, revision, snapshot.format());
+                return CompletableFuture.completedFuture(true);
+            }
+            if (rootCause(error) instanceof UnencodableTextException unencodable
+                    && !snapshot.format().isUnicode()
+                    && view.confirmSaveAsUtf8(unencodable.charset().name())) {
+                return write(editor, target, snapshot.withFormat(snapshot.format().asUtf8()), revision);
+            }
+            report("Failed to save file", error);
+            return CompletableFuture.completedFuture(false);
+        }, edt).thenCompose(next -> next);
     }
 
     public CompletableFuture<Boolean> closeActiveTab() {
@@ -214,10 +229,14 @@ public final class MainPresenter {
 
     private void report(String message, Throwable error) {
         LOG.error(message, error);
+        view.showError(message + ": " + rootCause(error).getMessage());
+    }
+
+    private static Throwable rootCause(Throwable error) {
         Throwable cause = error;
         while (cause instanceof java.util.concurrent.CompletionException && cause.getCause() != null) {
             cause = cause.getCause();
         }
-        view.showError(message + ": " + cause.getMessage());
+        return cause;
     }
 }
