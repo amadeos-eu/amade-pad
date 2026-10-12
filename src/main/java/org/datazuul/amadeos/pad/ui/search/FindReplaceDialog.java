@@ -17,6 +17,9 @@ public final class FindReplaceDialog extends JDialog {
     private final JTextField replaceField = new JTextField(20);
     private final JCheckBox matchCaseCheck = new JCheckBox("Match case");
     private final JCheckBox wrapAroundCheck = new JCheckBox("Wrap around", true);
+    private final JButton replaceBtn = new JButton("Replace");
+    private final JButton replaceAllBtn = new JButton("Replace All");
+    private boolean replaceMode = true;
 
     private final SearchService search;
     private final Supplier<JTextArea> activeEditor;
@@ -55,10 +58,8 @@ public final class FindReplaceDialog extends JDialog {
         JButton findBtn = new JButton("Find Next");
         findBtn.addActionListener(e -> findNext());
 
-        JButton replaceBtn = new JButton("Replace");
         replaceBtn.addActionListener(e -> replaceCurrent());
 
-        JButton replaceAllBtn = new JButton("Replace All");
         replaceAllBtn.addActionListener(e -> replaceAll());
 
         JButton closeBtn = new JButton("Close");
@@ -77,7 +78,11 @@ public final class FindReplaceDialog extends JDialog {
     public void showFor(boolean isReplaceMode) {
         EdtExecutor.requireEdt();
         setTitle(isReplaceMode ? "Replace" : "Find");
+        // In find mode the replace actions must not run with a stale "Replace with" value.
+        replaceMode = isReplaceMode;
         replaceField.setEnabled(isReplaceMode);
+        replaceBtn.setEnabled(isReplaceMode);
+        replaceAllBtn.setEnabled(isReplaceMode);
         setVisible(true);
         findField.requestFocusInWindow();
         findField.selectAll();
@@ -106,8 +111,9 @@ public final class FindReplaceDialog extends JDialog {
         }
     }
 
-    private void replaceCurrent() {
+    void replaceCurrent() {
         EdtExecutor.requireEdt();
+        if (!replaceMode) return;
         JTextArea activeTextArea = activeEditor.get();
         if (activeTextArea == null) return;
         String selected = activeTextArea.getSelectedText();
@@ -121,8 +127,9 @@ public final class FindReplaceDialog extends JDialog {
         findNext();
     }
 
-    private void replaceAll() {
+    void replaceAll() {
         EdtExecutor.requireEdt();
+        if (!replaceMode) return;
         JTextArea activeTextArea = activeEditor.get();
         if (activeTextArea == null) return;
         String query = findField.getText();
