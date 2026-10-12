@@ -6,6 +6,8 @@ import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.geom.Rectangle2D;
 
 /**
@@ -17,23 +19,42 @@ public final class LineNumberMargin extends JComponent implements DocumentListen
     private final Color gutterBg = new Color(0xDE, 0xD4, 0xCD);
     private final Color gutterFg = new Color(0x60, 0x60, 0x60);
     private final Color currentLineFg = new Color(0x10, 0x10, 0x10);
+    private int digits;
 
     public LineNumberMargin(JTextArea textArea) {
         this.textArea = textArea;
         this.textArea.getDocument().addDocumentListener(this);
         this.textArea.addCaretListener(this);
+        // The text area's height changes without document events (word wrap, window resize),
+        // so the margin follows its actual size instead of a height captured on the last edit.
+        this.textArea.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                revalidate();
+                repaint();
+            }
+        });
         setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        updateWidth();
+        digits = digits();
+    }
+
+    private int digits() {
+        return Math.max(3, String.valueOf(textArea.getLineCount()).length());
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        if (isPreferredSizeSet()) return super.getPreferredSize();
+        FontMetrics fm = getFontMetrics(getFont());
+        return new Dimension(fm.charWidth('0') * digits + 14, textArea.getHeight());
     }
 
     private void updateWidth() {
-        int lines = textArea.getLineCount();
-        int digits = Math.max(3, String.valueOf(lines).length());
-        FontMetrics fm = getFontMetrics(getFont());
-        int width = fm.charWidth('0') * digits + 14;
-        Dimension d = new Dimension(width, textArea.getHeight());
-        setPreferredSize(d);
-        revalidate();
+        int current = digits();
+        if (current != digits) {
+            digits = current;
+            revalidate();
+        }
         repaint();
     }
 
