@@ -9,9 +9,14 @@ public final class DocumentState {
     private Path path;
     private long revision;
     private long savedRevision;
+    private TextFormat format = TextFormat.DEFAULT;
 
     public Path path() {
         return path;
+    }
+
+    public TextFormat format() {
+        return format;
     }
 
     public long revision() {
@@ -30,14 +35,16 @@ public final class DocumentState {
         revision++;
     }
 
-    public void loaded(Path path) {
+    public void loaded(Path path, TextFormat format) {
         this.path = path;
+        this.format = format;
         revision = 0;
         savedRevision = 0;
     }
 
-    public void saved(Path path, long snapshotRevision) {
+    public void saved(Path path, long snapshotRevision, TextFormat format) {
         this.path = path;
+        this.format = format;
         savedRevision = snapshotRevision;
     }
 }

@@ -14,6 +14,7 @@
 - **Tabbed Editing:** Multiple open documents with modified indicators (`*`) and safety prompts on close/exit.
 - **Line Numbers & Margin:** High-visibility gutter rendering active line numbers.
 - **Find & Replace:** Non-modal search dialog with wrap-around and match-case support.
+- **Encodings & Line Endings:** Detects UTF-8, UTF-16 (with BOM), Windows-1252 and ISO-8859-1 as well as LF, CRLF and CR line endings, and saves files back in the same format.
 - **Integrated Undo / Redo:** Full document edit history (`Ctrl+Z`, `Ctrl+Y`).
 - **Debian Packaging:** Direct creation of `.deb` packages installable via `dpkg -i` or drop-in `config/packages.chroot/` in amadeOS.
 - **XDG Integration:** Ships Freedesktop-compliant `amade-pad.desktop` entry automatically picked up by CDE Front Panel drawers.
@@ -27,8 +28,10 @@ wires `ui.main.MainWindow`, `MainMenuBar`, and `MainPresenter`; editor component
 live in `ui.editor`, search controls in `ui.search`, and Motif styling in
 `ui.swing`. `domain.DocumentState` tracks document identity and saved revisions.
 
-`service.DocumentService` delegates UTF-8 persistence to `repository.DocumentRepository`
-and its `repository.FileSystemDocumentRepository` implementation.
+`service.DocumentService` delegates persistence to `repository.DocumentRepository`
+and its `repository.FileSystemDocumentRepository` implementation, which saves atomically.
+`repository.TextCodec` detects the charset, byte order mark and line ending of a file;
+the editor works with `\n` and `domain.TextFormat` restores the original format on save.
 File operations run as `CompletableFuture` tasks on virtual threads; Swing access
 and completion handling stay on the EDT through `ui.common.EdtExecutor`.
 `SearchService` contains the Swing-independent find/replace logic. SLF4J with

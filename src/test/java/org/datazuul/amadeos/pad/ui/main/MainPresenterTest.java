@@ -9,7 +9,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 import javax.swing.SwingUtilities;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.datazuul.amadeos.pad.domain.DocumentState;
+import org.datazuul.amadeos.pad.domain.TextDocument;
+import org.datazuul.amadeos.pad.domain.TextFormat;
+import org.datazuul.amadeos.pad.domain.UnencodableTextException;
 import org.datazuul.amadeos.pad.service.DocumentService;
 import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorView;
@@ -29,6 +34,7 @@ class MainPresenterTest {
     private DocumentState state;
     private final List<EditorView> editors = new ArrayList<>();
     private final Path path = Path.of("sample.txt").toAbsolutePath().normalize();
+    private final TextDocument snapshot = new TextDocument("snapshot", TextFormat.DEFAULT);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -45,14 +51,15 @@ class MainPresenterTest {
             when(editor.text()).thenReturn("snapshot");
             doAnswer(invocation -> {
                 assertTrue(SwingUtilities.isEventDispatchThread());
-                state.loaded(invocation.getArgument(0));
+                TextDocument document = invocation.getArgument(1);
+                state.loaded(invocation.getArgument(0), document.format());
                 return null;
-            }).when(editor).load(any(), anyString());
+            }).when(editor).load(any(), any(TextDocument.class));
             doAnswer(invocation -> {
                 assertTrue(SwingUtilities.isEventDispatchThread());
-                state.saved(invocation.getArgument(0), invocation.getArgument(1));
+                state.saved(invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2));
                 return null;
-            }).when(editor).saved(any(), anyLong());
+            }).when(editor).saved(any(), anyLong(), any());
             editors.add(editor);
             when(view.editors()).thenAnswer(invocation -> List.copyOf(editors));
             when(view.activeEditor()).thenReturn(editor);
@@ -71,14 +78,15 @@ class MainPresenterTest {
 
     @Test
     void opensOnEdtAndSelectsAlreadyOpenNormalizedPath() throws Exception {
-        CompletableFuture<String> io = new CompletableFuture<>();
+        CompletableFuture<TextDocument> io = new CompletableFuture<>();
         when(service.open(path)).thenReturn(io);
         onEdt(() -> { editors.clear(); return null; });
         CompletableFuture<Void> result = onEdt(() -> presenter.open(path));
-        verify(editor, never()).load(any(), anyString());
-        io.complete("loaded");
+        verify(editor, never()).load(any(), any(TextDocument.class));
+        TextDocument loaded = new TextDocument("loaded", TextFormat.DEFAULT);
+        io.complete(loaded);
         result.join();
-        verify(editor).load(path, "loaded");
+        verify(editor).load(path, loaded);
         onEdt(() -> presenter.open(Path.of(".").resolve("sample.txt"))).join();
         verify(view).selectEditor(editor);
         verify(service, times(1)).open(path);
@@ -91,19 +99,19 @@ class MainPresenterTest {
         onEdt(() -> presenter.open(path)).join();
         verify(view).showError("Failed to open file: not found");
         verify(view).addEditor();
-        verify(editor, never()).load(any(), anyString());
+        verify(editor, never()).load(any(), any(TextDocument.class));
     }
 
     @Test
     void saveUsesImmutableSnapshotAndDoesNotClearLaterEdits() throws Exception {
         CompletableFuture<Void> io = new CompletableFuture<>();
-        when(service.save(path, "snapshot")).thenReturn(io);
-        onEdt(() -> { state.loaded(path); state.changed(); return null; });
+        when(service.save(path, snapshot)).thenReturn(io);
+        onEdt(() -> { state.loaded(path, TextFormat.DEFAULT); state.changed(); return null; });
         CompletableFuture<Boolean> result = onEdt(() -> presenter.saveCurrent(false));
         onEdt(() -> { state.changed(); return null; });
         io.complete(null);
         assertTrue(result.join());
-        verify(editor).saved(path, 1L);
+        verify(editor).saved(path, 1L, TextFormat.DEFAULT);
         assertTrue(onEdt(state::isModified));
     }
 
@@ -111,25 +119,25 @@ class MainPresenterTest {
     void saveAsFailurePreservesOriginalIdentityAndDirtyState() throws Exception {
         Path other = path.resolveSibling("other.txt");
         onEdt(() -> {
-            state.loaded(path);
+            state.loaded(path, TextFormat.DEFAULT);
             state.changed();
             when(view.chooseSavePath(path)).thenReturn(other);
             return null;
         });
-        when(service.save(other, "snapshot")).thenReturn(CompletableFuture.failedFuture(new IOException("access denied")));
+        when(service.save(other, snapshot)).thenReturn(CompletableFuture.failedFuture(new IOException("access denied")));
         assertFalse(onEdt(() -> presenter.saveCurrent(true)).join());
         assertEquals(path, onEdt(state::path));
         assertTrue(onEdt(state::isModified));
         verify(view).showError("Failed to save file: access denied");
-        verify(editor, never()).saved(any(), anyLong());
+        verify(editor, never()).saved(any(), anyLong(), any());
     }
 
     @Test
     void closeWaitsForSaveBeforeRemovingTheTab() throws Exception {
         CompletableFuture<Void> io = new CompletableFuture<>();
-        when(service.save(path, "snapshot")).thenReturn(io);
+        when(service.save(path, snapshot)).thenReturn(io);
         onEdt(() -> {
-            state.loaded(path);
+            state.loaded(path, TextFormat.DEFAULT);
             state.changed();
             when(view.confirmClose(editor)).thenReturn(MainView.SaveChoice.SAVE);
             return null;
@@ -145,9 +153,9 @@ class MainPresenterTest {
 
     @Test
     void failedCloseSaveLeavesTabOpen() throws Exception {
-        when(service.save(path, "snapshot")).thenReturn(CompletableFuture.failedFuture(new IOException("disk full")));
+        when(service.save(path, snapshot)).thenReturn(CompletableFuture.failedFuture(new IOException("disk full")));
         onEdt(() -> {
-            state.loaded(path);
+            state.loaded(path, TextFormat.DEFAULT);
             state.changed();
             when(view.confirmClose(editor)).thenReturn(MainView.SaveChoice.SAVE);
             return null;
@@ -192,9 +200,9 @@ class MainPresenterTest {
     @Test
     void editingDuringCloseSavePreventsDataLoss() throws Exception {
         CompletableFuture<Void> io = new CompletableFuture<>();
-        when(service.save(path, "snapshot")).thenReturn(io);
+        when(service.save(path, snapshot)).thenReturn(io);
         onEdt(() -> {
-            state.loaded(path);
+            state.loaded(path, TextFormat.DEFAULT);
             state.changed();
             when(view.confirmClose(editor)).thenReturn(MainView.SaveChoice.SAVE);
             return null;
@@ -210,23 +218,23 @@ class MainPresenterTest {
     @Test
     void closeWaitsForAlreadyRunningSaveAndDoesNotStartAnother() throws Exception {
         CompletableFuture<Void> io = new CompletableFuture<>();
-        when(service.save(path, "snapshot")).thenReturn(io);
-        onEdt(() -> { state.loaded(path); state.changed(); return null; });
+        when(service.save(path, snapshot)).thenReturn(io);
+        onEdt(() -> { state.loaded(path, TextFormat.DEFAULT); state.changed(); return null; });
         CompletableFuture<Boolean> save = onEdt(() -> presenter.saveCurrent(false));
         assertSame(save, onEdt(() -> presenter.saveCurrent(false)));
         CompletableFuture<Boolean> close = onEdt(presenter::closeActiveTab);
         verify(view, never()).confirmClose(any());
         io.complete(null);
         assertTrue(close.join());
-        verify(service, times(1)).save(path, "snapshot");
+        verify(service, times(1)).save(path, snapshot);
     }
 
     @Test
     void exitWaitsForSaveThenShutsDownWithoutCreatingANewTab() throws Exception {
         CompletableFuture<Void> io = new CompletableFuture<>();
-        when(service.save(path, "snapshot")).thenReturn(io);
+        when(service.save(path, snapshot)).thenReturn(io);
         onEdt(() -> {
-            state.loaded(path);
+            state.loaded(path, TextFormat.DEFAULT);
             state.changed();
             when(view.confirmClose(editor)).thenReturn(MainView.SaveChoice.SAVE);
             return null;
@@ -257,14 +265,60 @@ class MainPresenterTest {
 
     @Test
     void exitDuringOpenReportsBusyAndDoesNotCloseWindow() throws Exception {
-        CompletableFuture<String> io = new CompletableFuture<>();
+        CompletableFuture<TextDocument> io = new CompletableFuture<>();
         when(service.open(path)).thenReturn(io);
         CompletableFuture<Void> open = onEdt(() -> presenter.open(path));
         assertFalse(onEdt(presenter::exit).join());
         verify(view).showError(contains("wait"));
         verify(executor, never()).shutdown();
-        io.complete("content");
+        io.complete(new TextDocument("content", TextFormat.DEFAULT));
         open.join();
+    }
+
+    @Test
+    void savePreservesLoadedFormat() throws Exception {
+        TextFormat crlfLatin = new TextFormat(Charset.forName("windows-1252"), false, TextFormat.LineEnding.CRLF);
+        TextDocument latin = new TextDocument("snapshot", crlfLatin);
+        when(service.save(path, latin)).thenReturn(CompletableFuture.completedFuture(null));
+        onEdt(() -> { state.loaded(path, crlfLatin); state.changed(); return null; });
+        assertTrue(onEdt(() -> presenter.saveCurrent(false)).join());
+        verify(editor).saved(path, 1L, crlfLatin);
+        verify(view, never()).confirmSaveAsUtf8(any());
+    }
+
+    @Test
+    void unencodableTextCanBeSavedAsUtf8() throws Exception {
+        Charset latin = Charset.forName("windows-1252");
+        TextFormat crlfLatin = new TextFormat(latin, false, TextFormat.LineEnding.CRLF);
+        TextFormat crlfUtf8 = new TextFormat(StandardCharsets.UTF_8, false, TextFormat.LineEnding.CRLF);
+        when(service.save(path, new TextDocument("snapshot", crlfLatin)))
+                .thenReturn(CompletableFuture.failedFuture(new UnencodableTextException(latin, null)));
+        when(service.save(path, new TextDocument("snapshot", crlfUtf8)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        onEdt(() -> {
+            state.loaded(path, crlfLatin);
+            state.changed();
+            when(view.confirmSaveAsUtf8("windows-1252")).thenReturn(true);
+            return null;
+        });
+        assertTrue(onEdt(() -> presenter.saveCurrent(false)).join());
+        verify(editor).saved(path, 1L, crlfUtf8);
+        assertEquals(crlfUtf8, onEdt(state::format));
+        verify(view, never()).showError(any());
+    }
+
+    @Test
+    void declinedUtf8ConversionReportsErrorAndKeepsDocumentDirty() throws Exception {
+        Charset latin = Charset.forName("windows-1252");
+        TextFormat latinFormat = new TextFormat(latin, false, TextFormat.LineEnding.LF);
+        when(service.save(path, new TextDocument("snapshot", latinFormat)))
+                .thenReturn(CompletableFuture.failedFuture(new UnencodableTextException(latin, null)));
+        onEdt(() -> { state.loaded(path, latinFormat); state.changed(); return null; });
+        assertFalse(onEdt(() -> presenter.saveCurrent(false)).join());
+        verify(view).confirmSaveAsUtf8("windows-1252");
+        verify(view).showError(contains("cannot be stored as windows-1252"));
+        assertTrue(onEdt(state::isModified));
+        verify(service, times(1)).save(any(), any());
     }
 
     @Test

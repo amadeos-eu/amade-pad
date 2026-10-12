@@ -1,6 +1,8 @@
 package org.datazuul.amadeos.pad.ui.editor;
 
 import org.datazuul.amadeos.pad.domain.DocumentState;
+import org.datazuul.amadeos.pad.domain.TextDocument;
+import org.datazuul.amadeos.pad.domain.TextFormat;
 import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
 
 import javax.swing.*;
@@ -80,19 +82,19 @@ public final class EditorTab extends JPanel implements EditorView {
     }
 
     @Override
-    public void load(Path path, String content) {
+    public void load(Path path, TextDocument document) {
         EdtExecutor.requireEdt();
-        textArea.setText(content);
+        textArea.setText(document.text());
         textArea.setCaretPosition(0);
         undoManager.discardAllEdits();
-        state.loaded(path);
+        state.loaded(path, document.format());
         onStateChanged.run();
     }
 
     @Override
-    public void saved(Path path, long revision) {
+    public void saved(Path path, long revision, TextFormat format) {
         EdtExecutor.requireEdt();
-        state.saved(path, revision);
+        state.saved(path, revision, format);
         onStateChanged.run();
     }
 

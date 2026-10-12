@@ -1,9 +1,10 @@
 package org.datazuul.amadeos.pad.repository;
 
+import org.datazuul.amadeos.pad.domain.TextDocument;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -15,18 +16,23 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 
 /**
- * Reads and writes UTF-8 documents. Writes go to a temporary file in the target directory,
+ * Reads and writes text documents in their detected format (see {@link TextCodec}).
+ * Writes go to a temporary file in the target directory,
  * which is flushed to disk and then atomically renamed over the target, so a crash or a full
  * disk never leaves a truncated document behind.
  */
 public final class FileSystemDocumentRepository implements DocumentRepository {
+    private final TextCodec codec = new TextCodec();
+
     @Override
-    public String read(Path path) throws IOException {
-        return Files.readString(path, StandardCharsets.UTF_8);
+    public TextDocument read(Path path) throws IOException {
+        return codec.decode(Files.readAllBytes(path));
     }
 
     @Override
-    public void write(Path path, String content) throws IOException {
+    public void write(Path path, TextDocument document) throws IOException {
+        // Encode first: an unencodable character must fail before any file is touched.
+        byte[] bytes = codec.encode(document);
         // Write through symlinks to the real file instead of replacing the link itself.
         Path target = Files.exists(path) ? path.toRealPath() : path.toAbsolutePath();
         if (Files.isDirectory(target)) {
@@ -36,7 +42,7 @@ public final class FileSystemDocumentRepository implements DocumentRepository {
         Path temp = Files.createTempFile(directory, "." + target.getFileName() + ".", ".tmp");
         try {
             try (FileChannel channel = FileChannel.open(temp, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
-                ByteBuffer buffer = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
+                ByteBuffer buffer = ByteBuffer.wrap(bytes);
                 while (buffer.hasRemaining()) channel.write(buffer);
                 channel.force(true);
             }
