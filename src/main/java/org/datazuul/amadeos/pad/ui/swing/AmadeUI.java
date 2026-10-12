@@ -405,11 +405,14 @@ public final class AmadeUI {
             g2.setColor(SUNKEN_BG);
             g2.fillRect(x + 1, y + 1, size - 2, size - 2);
 
-            g2.setColor(TEXT_ACTIVE);
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setStroke(new java.awt.BasicStroke(1.5f));
-            g2.drawLine(x + 2, y + 6, x + 5, y + 9);
-            g2.drawLine(x + 5, y + 9, x + 9, y + 3);
+            // BasicMenuItemUI paints the check icon for selected and unselected items alike.
+            if (c instanceof AbstractButton b && b.isSelected()) {
+                g2.setColor(TEXT_ACTIVE);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setStroke(new java.awt.BasicStroke(1.5f));
+                g2.drawLine(x + 2, y + 6, x + 5, y + 9);
+                g2.drawLine(x + 5, y + 9, x + 9, y + 3);
+            }
         }
 
         @Override
