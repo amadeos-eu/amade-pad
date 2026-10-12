@@ -1,21 +1,12 @@
-package org.datazuul.amadeos.pad;
+package org.datazuul.amadeos.pad.ui.editor;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import javax.swing.JComponent;
-import javax.swing.JTextArea;
+import javax.swing.*;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
 
 /**
  * Gutter component rendering line numbers for a JTextArea.
@@ -23,9 +14,9 @@ import javax.swing.event.DocumentListener;
 public final class LineNumberMargin extends JComponent implements DocumentListener, CaretListener {
 
     private final JTextArea textArea;
-    private Color gutterBg = new Color(0xDE, 0xD4, 0xCD);
-    private Color gutterFg = new Color(0x60, 0x60, 0x60);
-    private Color currentLineFg = new Color(0x10, 0x10, 0x10);
+    private final Color gutterBg = new Color(0xDE, 0xD4, 0xCD);
+    private final Color gutterFg = new Color(0x60, 0x60, 0x60);
+    private final Color currentLineFg = new Color(0x10, 0x10, 0x10);
 
     public LineNumberMargin(JTextArea textArea) {
         this.textArea = textArea;
@@ -76,7 +67,9 @@ public final class LineNumberMargin extends JComponent implements DocumentListen
 
             for (int i = startLine; i <= endLine; i++) {
                 int lineStartOffset = textArea.getLineStartOffset(i);
-                Rectangle r = textArea.modelToView2D(lineStartOffset).getBounds();
+                Rectangle2D bounds = textArea.modelToView2D(lineStartOffset);
+                if (bounds == null) continue;
+                Rectangle r = bounds.getBounds();
 
                 String lineStr = String.valueOf(i + 1);
                 int stringWidth = fm.stringWidth(lineStr);
@@ -91,7 +84,9 @@ public final class LineNumberMargin extends JComponent implements DocumentListen
                     g2.drawString(lineStr, x, y);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (javax.swing.text.BadLocationException e) {
+            org.slf4j.LoggerFactory.getLogger(LineNumberMargin.class).warn("Could not render line numbers", e);
+        }
     }
 
     @Override
@@ -114,4 +109,3 @@ public final class LineNumberMargin extends JComponent implements DocumentListen
         repaint();
     }
 }
-

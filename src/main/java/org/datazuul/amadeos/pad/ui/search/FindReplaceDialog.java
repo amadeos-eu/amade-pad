@@ -1,18 +1,12 @@
-package org.datazuul.amadeos.pad;
+package org.datazuul.amadeos.pad.ui.search;
 
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.Frame;
-import java.awt.GridLayout;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import org.datazuul.amadeos.pad.service.SearchService;
+import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
+import org.datazuul.amadeos.pad.ui.swing.AmadeUI;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.function.Supplier;
 
 /**
  * Find and Replace dialog for amade-pad.
@@ -24,10 +18,14 @@ public final class FindReplaceDialog extends JDialog {
     private final JCheckBox matchCaseCheck = new JCheckBox("Match case");
     private final JCheckBox wrapAroundCheck = new JCheckBox("Wrap around", true);
 
-    private JTextArea activeTextArea;
+    private final SearchService search;
+    private final Supplier<JTextArea> activeEditor;
 
-    public FindReplaceDialog(Frame owner) {
+    public FindReplaceDialog(Frame owner, SearchService search, Supplier<JTextArea> activeEditor) {
         super(owner, "Find and Replace", false);
+        EdtExecutor.requireEdt();
+        this.search = search;
+        this.activeEditor = activeEditor;
         setLayout(new BorderLayout(8, 8));
         getContentPane().setBackground(AmadeUI.BASE);
 
@@ -76,8 +74,8 @@ public final class FindReplaceDialog extends JDialog {
         setLocationRelativeTo(owner);
     }
 
-    public void showFor(JTextArea textArea, boolean isReplaceMode) {
-        this.activeTextArea = textArea;
+    public void showFor(boolean isReplaceMode) {
+        EdtExecutor.requireEdt();
         setTitle(isReplaceMode ? "Replace" : "Find");
         replaceField.setEnabled(isReplaceMode);
         setVisible(true);
@@ -86,6 +84,8 @@ public final class FindReplaceDialog extends JDialog {
     }
 
     public boolean findNext() {
+        EdtExecutor.requireEdt();
+        JTextArea activeTextArea = activeEditor.get();
         if (activeTextArea == null) return false;
         String query = findField.getText();
         if (query.isEmpty()) return false;
@@ -94,10 +94,7 @@ public final class FindReplaceDialog extends JDialog {
         boolean matchCase = matchCaseCheck.isSelected();
         int caret = activeTextArea.getCaretPosition();
 
-        int index = search(text, query, caret, matchCase);
-        if (index < 0 && wrapAroundCheck.isSelected()) {
-            index = search(text, query, 0, matchCase);
-        }
+        int index = search.find(text, query, caret, matchCase, wrapAroundCheck.isSelected());
 
         if (index >= 0) {
             activeTextArea.setSelectionStart(index);
@@ -110,12 +107,14 @@ public final class FindReplaceDialog extends JDialog {
     }
 
     private void replaceCurrent() {
+        EdtExecutor.requireEdt();
+        JTextArea activeTextArea = activeEditor.get();
         if (activeTextArea == null) return;
         String selected = activeTextArea.getSelectedText();
         String query = findField.getText();
         String replacement = replaceField.getText();
 
-        boolean match = (selected != null) && (matchCaseCheck.isSelected() ? selected.equals(query) : selected.equalsIgnoreCase(query));
+        boolean match = search.matches(selected, query, matchCaseCheck.isSelected());
         if (match) {
             activeTextArea.replaceSelection(replacement);
         }
@@ -123,6 +122,8 @@ public final class FindReplaceDialog extends JDialog {
     }
 
     private void replaceAll() {
+        EdtExecutor.requireEdt();
+        JTextArea activeTextArea = activeEditor.get();
         if (activeTextArea == null) return;
         String query = findField.getText();
         if (query.isEmpty()) return;
@@ -131,36 +132,15 @@ public final class FindReplaceDialog extends JDialog {
         String text = activeTextArea.getText();
         boolean matchCase = matchCaseCheck.isSelected();
 
-        int count = 0;
-        int pos = 0;
-        StringBuilder sb = new StringBuilder();
-
-        while (true) {
-            int idx = search(text, query, pos, matchCase);
-            if (idx < 0) {
-                sb.append(text.substring(pos));
-                break;
-            }
-            sb.append(text, pos, idx);
-            sb.append(replacement);
-            pos = idx + query.length();
-            count++;
-        }
+        SearchService.Replacement result = search.replaceAll(text, query, replacement, matchCase);
+        int count = result.count();
 
         if (count > 0) {
-            activeTextArea.setText(sb.toString());
+            activeTextArea.setText(result.text());
             JOptionPane.showMessageDialog(this, "Replaced " + count + " occurrences.", "Replace All", JOptionPane.INFORMATION_MESSAGE);
         } else {
             JOptionPane.showMessageDialog(this, "Text not found: \"" + query + "\"", "Replace All", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
-    private int search(String text, String query, int fromIndex, boolean matchCase) {
-        if (matchCase) {
-            return text.indexOf(query, fromIndex);
-        } else {
-            return text.toLowerCase().indexOf(query.toLowerCase(), fromIndex);
-        }
-    }
 }
-

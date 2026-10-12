@@ -1,21 +1,11 @@
-package org.datazuul.amadeos.pad;
+package org.datazuul.amadeos.pad.ui.swing;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Insets;
-import java.awt.RenderingHints;
-import javax.swing.AbstractButton;
-import javax.swing.BorderFactory;
-import javax.swing.ButtonModel;
-import javax.swing.JComponent;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
 import javax.swing.plaf.basic.BasicToggleButtonUI;
+import java.awt.*;
 
 /**
  * Provides authentic Motif 3D styling and theme colors for amadeOS Swing applications,
@@ -33,7 +23,8 @@ public final class AmadeUI {
     public static final Color TEXT_ACTIVE = new Color(0x11, 0x11, 0x11);
     public static final Color TEXT_INACTIVE = new Color(0x75, 0x6E, 0x68);
 
-    private AmadeUI() {}
+    private AmadeUI() {
+    }
 
     /**
      * Installs the amadeOS Motif 3D look-and-feel centrally into UIManager.
@@ -42,7 +33,9 @@ public final class AmadeUI {
         try {
             // Start with base CrossPlatform / Basic LAF
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-        } catch (Exception ignored) {}
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException e) {
+            org.slf4j.LoggerFactory.getLogger(AmadeUI.class).warn("Could not install cross-platform look and feel", e);
+        }
 
         // Global Palette
         UIManager.put("control", new ColorUIResource(BASE));
@@ -72,18 +65,27 @@ public final class AmadeUI {
         UIManager.put("ToggleButton.select", new ColorUIResource(SUNKEN_BG));
         UIManager.put("ToggleButton.border", new MotifButtonBorder(2));
 
-        // Disable default Metal / Ocean blue gradients
-        java.util.List<?> noGrad = java.util.Collections.emptyList();
-        UIManager.put("MenuBar.gradient", noGrad);
-        UIManager.put("MenuItem.gradient", noGrad);
-        UIManager.put("CheckBoxMenuItem.gradient", noGrad);
-        UIManager.put("RadioButtonMenuItem.gradient", noGrad);
-        UIManager.put("Button.gradient", noGrad);
-        UIManager.put("ToggleButton.gradient", noGrad);
-        UIManager.put("CheckBox.gradient", noGrad);
-        UIManager.put("RadioButton.gradient", noGrad);
-        UIManager.put("ScrollBar.gradient", noGrad);
-        UIManager.put("Slider.gradient", noGrad);
+        // Metal's Ocean painter expects two ratios followed by three colors.
+        java.util.List<?> flatGrad = java.util.Arrays.asList(
+                0.0, 0.0,
+                new ColorUIResource(BASE),
+                new ColorUIResource(BASE),
+                new ColorUIResource(BASE)
+        );
+        UIManager.put("MenuBar.gradient", flatGrad);
+        UIManager.put("MenuItem.gradient", flatGrad);
+        UIManager.put("CheckBoxMenuItem.gradient", flatGrad);
+        UIManager.put("RadioButtonMenuItem.gradient", flatGrad);
+        UIManager.put("Button.gradient", flatGrad);
+        UIManager.put("ToggleButton.gradient", flatGrad);
+        UIManager.put("CheckBox.gradient", flatGrad);
+        UIManager.put("RadioButton.gradient", flatGrad);
+        UIManager.put("ScrollBar.gradient", java.util.List.of(
+                0.3f, 0.2f,
+                new ColorUIResource(HIGHLIGHT),
+                new ColorUIResource(BASE),
+                new ColorUIResource(SHADOW)));
+        UIManager.put("Slider.gradient", flatGrad);
 
         // Menus
         UIManager.put("MenuBarUI", "javax.swing.plaf.basic.BasicMenuBarUI");
@@ -493,4 +495,3 @@ public final class AmadeUI {
         }
     }
 }
-
