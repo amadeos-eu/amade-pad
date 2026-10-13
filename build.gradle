@@ -18,11 +18,13 @@ application {
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    implementation 'com.google.inject:guice:7.0.0'
-    implementation 'org.slf4j:slf4j-api:2.0.17'
+    // Theme, Motif look, start-up and XDG helpers shared by all amadeOS applications.
+    // With ../amade-commons checked out, settings.gradle builds that checkout instead (composite build).
+    implementation 'com.github.datazuul:amade-commons:c028597ed9'
     runtimeOnly 'ch.qos.logback:logback-classic:1.5.18'
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -112,7 +114,14 @@ StartupNotify=true
             }
         }
 
-        // 5. Create Debian package control file
+        // 5. Licence text, as Debian expects it in /usr/share/doc/<package>/copyright
+        copy {
+            from 'LICENSE'
+            into new File(stagingDir, "usr/share/doc/amade-pad")
+            rename { 'copyright' }
+        }
+
+        // 6. Create Debian package control file
         def controlFile = new File(debianDir, "control")
         controlFile.text = """Package: amade-pad
 Version: ${project.version}
@@ -127,7 +136,7 @@ Description: Authentic Motif/CDE-styled text editor for amadeOS
  and clean workstation responsiveness.
 """
 
-        // 6. Build .deb package using dpkg-deb
+        // 7. Build .deb package using dpkg-deb
         def debFile = new File(distDir, "amade-pad_${project.version}_all.deb")
         def process = new ProcessBuilder("dpkg-deb", "--root-owner-group", "--build", stagingDir.absolutePath, debFile.absolutePath)
                 .redirectErrorStream(true)

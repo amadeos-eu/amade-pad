@@ -2,11 +2,11 @@ package org.datazuul.amadeos.pad.ui.main;
 
 import com.google.inject.Inject;
 import org.datazuul.amadeos.pad.service.SearchService;
-import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
+import org.datazuul.amadeos.commons.swing.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorTab;
 import org.datazuul.amadeos.pad.ui.editor.EditorView;
 import org.datazuul.amadeos.pad.ui.search.FindReplaceDialog;
-import org.datazuul.amadeos.pad.ui.swing.AmadeUI;
+import org.datazuul.amadeos.commons.swing.AmadeUI;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
@@ -34,14 +34,11 @@ public final class MainWindow extends JFrame implements MainView {
             EditorTab tab = (EditorTab) activeEditor();
             return tab == null ? null : tab.getTextArea();
         });
-        tabs.setBackground(AmadeUI.BASE);
         tabs.addChangeListener(e -> updateStatus());
         add(tabs, BorderLayout.CENTER);
         JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 3));
-        statusBar.setBackground(AmadeUI.BASE);
         statusBar.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
         status.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
-        status.setForeground(AmadeUI.TEXT_ACTIVE);
         statusBar.add(status);
         add(statusBar, BorderLayout.SOUTH);
         pack();
@@ -135,7 +132,7 @@ public final class MainWindow extends JFrame implements MainView {
         // Passing a text component avoids interpreting file names/messages as Swing HTML.
         javax.swing.JTextArea text = new javax.swing.JTextArea(message);
         text.setEditable(false);
-        text.setBackground(AmadeUI.BASE);
+        text.setOpaque(false); // shows the dialog colour of the current theme
         JOptionPane.showMessageDialog(this, text, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
@@ -145,7 +142,7 @@ public final class MainWindow extends JFrame implements MainView {
         JTextArea text = new JTextArea("The document contains characters that cannot be stored as " + charsetName
                 + ".\nSave it as UTF-8 instead?");
         text.setEditable(false);
-        text.setBackground(AmadeUI.BASE);
+        text.setOpaque(false); // shows the dialog colour of the current theme
         return JOptionPane.showConfirmDialog(this, text, "Save as UTF-8", JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
     }

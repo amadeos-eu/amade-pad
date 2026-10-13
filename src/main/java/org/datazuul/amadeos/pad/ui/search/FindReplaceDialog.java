@@ -1,8 +1,8 @@
 package org.datazuul.amadeos.pad.ui.search;
 
 import org.datazuul.amadeos.pad.service.SearchService;
-import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
-import org.datazuul.amadeos.pad.ui.swing.AmadeUI;
+import org.datazuul.amadeos.commons.swing.EdtExecutor;
+import org.datazuul.amadeos.commons.swing.AmadeUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -30,10 +30,8 @@ public final class FindReplaceDialog extends JDialog {
         this.search = search;
         this.activeEditor = activeEditor;
         setLayout(new BorderLayout(8, 8));
-        getContentPane().setBackground(AmadeUI.BASE);
 
         JPanel formPanel = new JPanel(new GridLayout(2, 2, 8, 8));
-        formPanel.setBackground(AmadeUI.BASE);
         formPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 4, 12));
         formPanel.add(new JLabel("Find:"));
         formPanel.add(findField);
@@ -41,20 +39,15 @@ public final class FindReplaceDialog extends JDialog {
         formPanel.add(replaceField);
 
         JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        optionsPanel.setBackground(AmadeUI.BASE);
-        matchCaseCheck.setBackground(AmadeUI.BASE);
-        wrapAroundCheck.setBackground(AmadeUI.BASE);
         optionsPanel.add(matchCaseCheck);
         optionsPanel.add(wrapAroundCheck);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
-        centerPanel.setBackground(AmadeUI.BASE);
         centerPanel.add(formPanel, BorderLayout.NORTH);
         centerPanel.add(optionsPanel, BorderLayout.SOUTH);
         add(centerPanel, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnPanel.setBackground(AmadeUI.BASE);
         JButton findBtn = new JButton("Find Next");
         findBtn.addActionListener(e -> findNext());
 

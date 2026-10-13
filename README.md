@@ -2,7 +2,7 @@
 
 **amade-pad** is an authentic Motif/CDE-styled text editor developed for the [amadeOS](https://github.com/datazuul/amadeos) desktop environment.
 
-![License](https://img.shields.io/badge/license-MIT-blue)
+![License](https://img.shields.io/badge/license-EUPL--1.2-blue)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Debian](https://img.shields.io/badge/Debian-package-red)
 
@@ -10,7 +10,7 @@
 
 ## Features
 
-- **Workstation Motif Aesthetic:** Authentic warm `#CEC2BB` 3D chiseled beveled container, recessed status panel, and workstation menus.
+- **Workstation Motif Aesthetic:** 3D chiseled bevels, recessed status panel and workstation menus in the colours of the current amadeOS desktop theme.
 - **Tabbed Editing:** Multiple open documents with modified indicators (`*`) and safety prompts on close/exit.
 - **Line Numbers & Margin:** High-visibility gutter rendering active line numbers.
 - **Find & Replace:** Non-modal search dialog with wrap-around and match-case support.
@@ -23,10 +23,11 @@
 
 ## Architecture
 
-The Java 21 Swing application uses Guice for dependency injection. `bootstrap`
+The Java 21 Swing application uses Guice for dependency injection. Theme, Motif look and start-up
+come from [amade-commons](https://github.com/datazuul/amade-commons): the editor follows the desktop
+theme chosen in the Style Manager immediately, including the dark *Dark Slate*. `bootstrap`
 wires `ui.main.MainWindow`, `MainMenuBar`, and `MainPresenter`; editor components
-live in `ui.editor`, search controls in `ui.search`, and Motif styling in
-`ui.swing`. `domain.DocumentState` tracks document identity and saved revisions.
+live in `ui.editor` and search controls in `ui.search`. `domain.DocumentState` tracks document identity and saved revisions.
 
 `service.DocumentService` delegates persistence to `repository.DocumentRepository`
 and its `repository.FileSystemDocumentRepository` implementation, which saves atomically.
@@ -45,6 +46,7 @@ and shuts down the I/O executor without calling `System.exit`.
 
 ### Prerequisites
 - Java 21+ JDK
+- `amade-commons` is taken from JitPack; a checkout in `../amade-commons` is built instead if present
 - (Optional) `dpkg-deb` for building `.deb` packages
 
 ### Run Unit Tests
@@ -82,4 +84,8 @@ java -jar build/libs/amade-pad-0.1.0.jar
 
 ## License
 
-MIT License. Copyright &copy; 2026 datazuul.com.
+amade-pad is free software, licensed under the
+[European Union Public Licence v. 1.2](LICENSE) (EUPL-1.2, SPDX identifier `EUPL-1.2`), like amadeOS
+and the other amadeOS applications. Versions before this change were published under the MIT License.
+
+Copyright &copy; 2026 datazuul.com and contributors.

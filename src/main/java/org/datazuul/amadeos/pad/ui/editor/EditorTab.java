@@ -3,7 +3,7 @@ package org.datazuul.amadeos.pad.ui.editor;
 import org.datazuul.amadeos.pad.domain.DocumentState;
 import org.datazuul.amadeos.pad.domain.TextDocument;
 import org.datazuul.amadeos.pad.domain.TextFormat;
-import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
+import org.datazuul.amadeos.commons.swing.EdtExecutor;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -26,9 +26,7 @@ public final class EditorTab extends JPanel implements EditorView {
         EdtExecutor.requireEdt();
         textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
         textArea.setTabSize(4);
-        textArea.setBackground(Color.WHITE);
-        textArea.setForeground(new Color(0x20, 0x20, 0x20));
-        textArea.setCaretColor(Color.BLACK);
+        // Background, text and caret colours come from the desktop theme (TextArea.* in AmadeUI).
         textArea.getDocument().addUndoableEditListener(undoManager);
         lineNumbers = new LineNumberMargin(textArea);
         scrollPane = new JScrollPane(textArea);

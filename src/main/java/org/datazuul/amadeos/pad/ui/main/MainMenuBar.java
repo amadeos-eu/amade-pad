@@ -1,8 +1,8 @@
 package org.datazuul.amadeos.pad.ui.main;
 
-import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
+import org.datazuul.amadeos.commons.swing.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorView.Edit;
-import org.datazuul.amadeos.pad.ui.swing.AmadeUI;
+import org.datazuul.amadeos.commons.swing.AmadeUI;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
@@ -14,7 +14,6 @@ public final class MainMenuBar extends JMenuBar {
 
     public MainMenuBar(MainPresenter presenter) {
         EdtExecutor.requireEdt();
-        setBackground(AmadeUI.BASE);
         setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
         JMenu file = menu("File", KeyEvent.VK_F);
         item(file, "New", KeyEvent.VK_N, CTRL, presenter::newDocument);

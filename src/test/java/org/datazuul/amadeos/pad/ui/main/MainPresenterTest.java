@@ -16,7 +16,7 @@ import org.datazuul.amadeos.pad.domain.TextDocument;
 import org.datazuul.amadeos.pad.domain.TextFormat;
 import org.datazuul.amadeos.pad.domain.UnencodableTextException;
 import org.datazuul.amadeos.pad.service.DocumentService;
-import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
+import org.datazuul.amadeos.commons.swing.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorView;
 import org.mockito.InOrder;
 import org.junit.jupiter.api.BeforeEach;

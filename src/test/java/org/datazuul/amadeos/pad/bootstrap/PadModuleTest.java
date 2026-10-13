@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,13 +16,18 @@ import org.datazuul.amadeos.pad.ui.main.MainMenuBar;
 import org.datazuul.amadeos.pad.ui.main.MainPresenter;
 import org.datazuul.amadeos.pad.ui.main.MainView;
 import org.datazuul.amadeos.pad.ui.main.MainWindow;
-import org.datazuul.amadeos.pad.ui.swing.AmadeUI;
+import org.datazuul.amadeos.commons.app.CommonsModule;
+import org.datazuul.amadeos.commons.config.XdgDirectories;
+import org.datazuul.amadeos.commons.swing.AmadeUI;
+import org.datazuul.amadeos.commons.theme.DesktopTheme;
+import org.datazuul.amadeos.commons.theme.ThemeRegistry;
+import org.datazuul.amadeos.commons.theme.ThemeStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-class ApplicationModuleTest {
+class PadModuleTest {
     @TempDir Path directory;
 
     @Test
@@ -29,8 +35,8 @@ class ApplicationModuleTest {
         assumeFalse(GraphicsEnvironment.isHeadless());
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             SwingUtilities.invokeAndWait(() -> {
-                AmadeUI.install();
-                Injector injector = Guice.createInjector(new ApplicationModule(executor));
+                AmadeUI.install(DesktopTheme.WARM_MOTIF);
+                Injector injector = injector(executor);
                 MainWindow window = injector.getInstance(MainWindow.class);
                 try {
                     assertSame(window, injector.getInstance(MainView.class));
@@ -55,7 +61,7 @@ class ApplicationModuleTest {
         Path path = directory.resolve("sample.txt");
         Files.writeString(path, "initial text");
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            Injector injector = onEdt(() -> Guice.createInjector(new ApplicationModule(executor)));
+            Injector injector = onEdt(() -> injector(executor));
             MainWindow window = onEdt(() -> injector.getInstance(MainWindow.class));
             MainPresenter presenter = onEdt(() -> injector.getInstance(MainPresenter.class));
             try {
@@ -83,6 +89,13 @@ class ApplicationModuleTest {
                 });
             }
         }
+    }
+
+    /** The production wiring, with theme and config directories inside the test directory. */
+    private Injector injector(ExecutorService executor) {
+        ThemeStore themes = new ThemeStore(directory, new ThemeRegistry());
+        XdgDirectories xdg = new XdgDirectories(Map.of(), directory.toString());
+        return Guice.createInjector(new CommonsModule(AmadePadApplication.APP, executor, themes, xdg), new PadModule());
     }
 
     private static <T> T onEdt(Callable<T> action) throws Exception {

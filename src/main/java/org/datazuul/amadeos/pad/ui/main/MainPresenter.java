@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import org.datazuul.amadeos.pad.domain.TextDocument;
 import org.datazuul.amadeos.pad.domain.UnencodableTextException;
 import org.datazuul.amadeos.pad.service.DocumentService;
-import org.datazuul.amadeos.pad.ui.common.EdtExecutor;
+import org.datazuul.amadeos.commons.swing.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
