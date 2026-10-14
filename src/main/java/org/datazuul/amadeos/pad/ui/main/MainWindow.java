@@ -1,6 +1,8 @@
 package org.datazuul.amadeos.pad.ui.main;
 
 import com.google.inject.Inject;
+import org.datazuul.amadeos.commons.i18n.LocaleSettings;
+import org.datazuul.amadeos.commons.i18n.Messages;
 import org.datazuul.amadeos.pad.service.SearchService;
 import org.datazuul.amadeos.commons.swing.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorTab;
@@ -20,17 +22,21 @@ import java.util.List;
 
 public final class MainWindow extends JFrame implements MainView {
     private final JTabbedPane tabs = new JTabbedPane();
-    private final JLabel status = new JLabel("Line: 1, Col: 1 | UTF-8 | LF | 0 chars");
+    private final JLabel status = new JLabel();
     private final FindReplaceDialog search;
+    private final Messages msg;
+    private final LocaleSettings locales;
 
     @Inject
-    public MainWindow(SearchService searchService) {
-        super("amade-pad — amadeOS Text Editor");
+    public MainWindow(SearchService searchService, Messages msg, LocaleSettings locales) {
+        super(msg.get("window.title"));
         EdtExecutor.requireEdt();
+        this.msg = msg;
+        this.locales = locales;
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setPreferredSize(new Dimension(800, 600));
         setLayout(new BorderLayout());
-        search = new FindReplaceDialog(this, searchService, () -> {
+        search = new FindReplaceDialog(this, searchService, msg, () -> {
             EditorTab tab = (EditorTab) activeEditor();
             return tab == null ? null : tab.getTextArea();
         });
@@ -41,13 +47,14 @@ public final class MainWindow extends JFrame implements MainView {
         status.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
         statusBar.add(status);
         add(statusBar, BorderLayout.SOUTH);
+        updateStatus();
         pack();
         setLocationRelativeTo(null);
     }
 
     public void bind(MainPresenter presenter) {
         EdtExecutor.requireEdt();
-        setJMenuBar(new MainMenuBar(presenter));
+        setJMenuBar(new MainMenuBar(presenter, msg, locales));
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -76,11 +83,11 @@ public final class MainWindow extends JFrame implements MainView {
         EditorTab editor = new EditorTab();
         editor.setOnStateChanged(() -> {
             int index = tabs.indexOfComponent(editor);
-            if (index >= 0) tabs.setTitleAt(index, editor.state().title());
+            if (index >= 0) tabs.setTitleAt(index, title(editor));
             updateStatus();
         });
         editor.getTextArea().addCaretListener(e -> updateStatus());
-        tabs.addTab(editor.state().title(), editor);
+        tabs.addTab(title(editor), editor);
         tabs.setSelectedComponent(editor);
         editor.getTextArea().requestFocusInWindow();
         updateStatus();
@@ -117,8 +124,8 @@ public final class MainWindow extends JFrame implements MainView {
     @Override
     public SaveChoice confirmClose(EditorView editor) {
         EdtExecutor.requireEdt();
-        int choice = JOptionPane.showConfirmDialog(this, "Save changes to " + editor.state().title() + " before closing?",
-                "Save Changes", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        int choice = JOptionPane.showConfirmDialog(this, msg.format("dialog.save-changes.message", title(editor)),
+                msg.get("dialog.save-changes.title"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         return switch (choice) {
             case JOptionPane.YES_OPTION -> SaveChoice.SAVE;
             case JOptionPane.NO_OPTION -> SaveChoice.DISCARD;
@@ -133,17 +140,25 @@ public final class MainWindow extends JFrame implements MainView {
         javax.swing.JTextArea text = new javax.swing.JTextArea(message);
         text.setEditable(false);
         text.setOpaque(false); // shows the dialog colour of the current theme
-        JOptionPane.showMessageDialog(this, text, "Error", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, text, msg.get("dialog.error.title"), JOptionPane.ERROR_MESSAGE);
+    }
+
+    @Override
+    public void showInfo(String message) {
+        EdtExecutor.requireEdt();
+        JTextArea text = new JTextArea(message);
+        text.setEditable(false);
+        text.setOpaque(false);
+        JOptionPane.showMessageDialog(this, text, getTitle(), JOptionPane.INFORMATION_MESSAGE);
     }
 
     @Override
     public boolean confirmSaveAsUtf8(String charsetName) {
         EdtExecutor.requireEdt();
-        JTextArea text = new JTextArea("The document contains characters that cannot be stored as " + charsetName
-                + ".\nSave it as UTF-8 instead?");
+        JTextArea text = new JTextArea(msg.format("dialog.save-utf8.message", charsetName));
         text.setEditable(false);
         text.setOpaque(false); // shows the dialog colour of the current theme
-        return JOptionPane.showConfirmDialog(this, text, "Save as UTF-8", JOptionPane.YES_NO_OPTION,
+        return JOptionPane.showConfirmDialog(this, text, msg.get("dialog.save-utf8.title"), JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
     }
 
@@ -164,10 +179,10 @@ public final class MainWindow extends JFrame implements MainView {
         EdtExecutor.requireEdt();
         JOptionPane.showMessageDialog(this,
                 "<html><center><h2>amade-pad 0.1.0</h2>"
-                        + "<p>An authentic Motif/CDE-style text editor</p>"
-                        + "<p>Designed for the <b>amadeOS</b> desktop environment</p><br>"
+                        + "<p>" + msg.get("dialog.about.text") + "</p>"
+                        + "<p>" + msg.get("dialog.about.desktop") + "</p><br>"
                         + "<small>&copy; 2026 datazuul.com &bull; Wolfgang Amadeus Mozart Edition</small></center></html>",
-                "About amade-pad", JOptionPane.INFORMATION_MESSAGE);
+                msg.get("dialog.about.title"), JOptionPane.INFORMATION_MESSAGE);
     }
 
     @Override
@@ -177,10 +192,14 @@ public final class MainWindow extends JFrame implements MainView {
         super.dispose();
     }
 
+    private String title(EditorView editor) {
+        return editor.state().title(msg.get("document.untitled"));
+    }
+
     private void updateStatus() {
         EditorTab editor = (EditorTab) activeEditor();
         if (editor == null) {
-            status.setText("No document open");
+            status.setText(msg.get("status.no-document"));
             return;
         }
         JTextArea area = editor.getTextArea();
@@ -189,8 +208,8 @@ public final class MainWindow extends JFrame implements MainView {
             int caret = Math.min(area.getCaretPosition(), area.getDocument().getLength());
             int line = area.getLineOfOffset(caret);
             int column = caret - area.getLineStartOffset(line) + 1;
-            status.setText("Line: " + (line + 1) + ", Col: " + column + " | " + editor.state().format().label()
-                    + " | " + area.getDocument().getLength() + " chars");
+            status.setText(msg.format("status.position", line + 1, column, editor.state().format().label(),
+                    area.getDocument().getLength()));
         } catch (BadLocationException e) {
             throw new IllegalStateException("Invalid caret position", e);
         }

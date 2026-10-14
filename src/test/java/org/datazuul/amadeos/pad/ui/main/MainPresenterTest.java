@@ -30,6 +30,8 @@ class MainPresenterTest {
     private DocumentService service;
     private ExecutorService executor;
     private MainPresenter presenter;
+    private final java.nio.file.Path config = TestTexts.tempDir();
+    private final org.datazuul.amadeos.commons.i18n.LocaleSettings locales = TestTexts.locales(config);
     private EditorView editor;
     private DocumentState state;
     private final List<EditorView> editors = new ArrayList<>();
@@ -71,7 +73,7 @@ class MainPresenterTest {
                 editors.remove(invocation.getArgument(0));
                 return null;
             }).when(view).removeEditor(any());
-            presenter = new MainPresenter(view, service, executor, new EdtExecutor());
+            presenter = new MainPresenter(view, service, executor, new EdtExecutor(), TestTexts.english(), locales);
             return null;
         });
     }

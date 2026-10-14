@@ -1,19 +1,27 @@
 package org.datazuul.amadeos.pad.ui.main;
 
 import com.google.inject.Inject;
+import org.datazuul.amadeos.commons.i18n.Language;
+import org.datazuul.amadeos.commons.i18n.LocaleSettings;
+import org.datazuul.amadeos.commons.i18n.Messages;
 import org.datazuul.amadeos.pad.domain.TextDocument;
 import org.datazuul.amadeos.pad.domain.UnencodableTextException;
+import org.datazuul.amadeos.pad.repository.BinaryFileException;
 import org.datazuul.amadeos.pad.service.DocumentService;
 import org.datazuul.amadeos.commons.swing.EdtExecutor;
 import org.datazuul.amadeos.pad.ui.editor.EditorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +35,8 @@ public final class MainPresenter {
     private final DocumentService documents;
     private final ExecutorService executor;
     private final EdtExecutor edt;
+    private final Messages msg;
+    private final LocaleSettings locales;
     private final Map<EditorView, CompletableFuture<Boolean>> saves = new IdentityHashMap<>();
     private final Set<EditorView> closing = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<Path> opening = new HashSet<>();
@@ -36,11 +46,14 @@ public final class MainPresenter {
     private boolean lineNumbers = true;
 
     @Inject
-    public MainPresenter(MainView view, DocumentService documents, ExecutorService executor, EdtExecutor edt) {
+    public MainPresenter(MainView view, DocumentService documents, ExecutorService executor, EdtExecutor edt,
+                         Messages msg, LocaleSettings locales) {
         this.view = view;
         this.documents = documents;
         this.executor = executor;
         this.edt = edt;
+        this.msg = msg;
+        this.locales = locales;
     }
 
     private boolean available() {
@@ -77,7 +90,7 @@ public final class MainPresenter {
         if (!opening.add(normalized)) return CompletableFuture.completedFuture(null);
         return documents.open(normalized).handleAsync((content, error) -> {
             if (error != null) {
-                report("Failed to open file", error);
+                report("error.open", error);
                 if (view.editors().isEmpty()) addEditor();
             } else {
                 addEditor().load(normalized, content);
@@ -126,7 +139,7 @@ public final class MainPresenter {
                     && view.confirmSaveAsUtf8(unencodable.charset().name())) {
                 return write(editor, target, snapshot.withFormat(snapshot.format().asUtf8()), revision);
             }
-            report("Failed to save file", error);
+            report("error.save", error);
             return CompletableFuture.completedFuture(false);
         }, edt).thenCompose(next -> next);
     }
@@ -165,7 +178,7 @@ public final class MainPresenter {
             closing.remove(editor);
             if (!success) return false;
             if (editor.state().isModified()) {
-                view.showError("The document changed while saving. Save the new changes before closing.");
+                view.showError(msg.get("error.changed-while-saving"));
                 return false;
             }
             view.removeEditor(editor);
@@ -176,7 +189,7 @@ public final class MainPresenter {
     public CompletableFuture<Boolean> exit() {
         if (!available()) return CompletableFuture.completedFuture(false);
         if (!opening.isEmpty() || !saves.isEmpty() || !closing.isEmpty()) {
-            view.showError("Please wait for the current file operation to finish before exiting.");
+            view.showError(msg.get("error.busy"));
             return CompletableFuture.completedFuture(false);
         }
         exiting = true;
@@ -227,9 +240,35 @@ public final class MainPresenter {
         if (available()) view.showAbout();
     }
 
-    private void report(String message, Throwable error) {
-        LOG.error(message, error);
-        view.showError(message + ": " + rootCause(error).getMessage());
+    /**
+     * Stores the application's own language ("Options > Language"); empty follows the desktop. The
+     * language changes at the next start, which the user is told.
+     */
+    public void setLanguage(Optional<Language> language) {
+        if (!available()) return;
+        try {
+            locales.setApplicationLanguage(language);
+        } catch (IOException e) {
+            report("error.save", e);
+            return;
+        }
+        if (locales.restartRequired()) {
+            view.showInfo(Messages.commons(msg.locale()).format("language.restart", "amade-pad"));
+        }
+    }
+
+    private void report(String key, Throwable error) {
+        LOG.error(key, error);
+        view.showError(msg.format(key, describe(rootCause(error))));
+    }
+
+    /** A translated reason for the usual errors, else the exception's own message. */
+    private String describe(Throwable error) {
+        if (error instanceof NoSuchFileException) return msg.get("error.not-found");
+        if (error instanceof AccessDeniedException) return msg.get("error.access-denied");
+        if (error instanceof BinaryFileException) return msg.get("error.binary");
+        if (error instanceof UnencodableTextException u) return msg.format("error.unencodable", u.charset().name());
+        return error.getMessage();
     }
 
     private static Throwable rootCause(Throwable error) {

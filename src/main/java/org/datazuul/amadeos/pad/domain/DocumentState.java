@@ -28,7 +28,12 @@ public final class DocumentState {
     }
 
     public String title() {
-        return (path == null ? "Untitled" : path.getFileName().toString()) + (isModified() ? " *" : "");
+        return title("Untitled");
+    }
+
+    /** File name, or {@code untitled} for a new document, with {@code *} when modified. */
+    public String title(String untitled) {
+        return (path == null ? untitled : path.getFileName().toString()) + (isModified() ? " *" : "");
     }
 
     public void changed() {
