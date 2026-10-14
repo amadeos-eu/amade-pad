@@ -1,5 +1,6 @@
 package org.datazuul.amadeos.pad.ui.search;
 
+import org.datazuul.amadeos.commons.i18n.Messages;
 import org.datazuul.amadeos.pad.service.SearchService;
 import org.datazuul.amadeos.commons.swing.EdtExecutor;
 import org.datazuul.amadeos.commons.swing.AmadeUI;
@@ -15,27 +16,33 @@ public final class FindReplaceDialog extends JDialog {
 
     private final JTextField findField = new JTextField(20);
     private final JTextField replaceField = new JTextField(20);
-    private final JCheckBox matchCaseCheck = new JCheckBox("Match case");
-    private final JCheckBox wrapAroundCheck = new JCheckBox("Wrap around", true);
-    private final JButton replaceBtn = new JButton("Replace");
-    private final JButton replaceAllBtn = new JButton("Replace All");
+    private final JCheckBox matchCaseCheck;
+    private final JCheckBox wrapAroundCheck;
+    private final JButton replaceBtn;
+    private final JButton replaceAllBtn;
+    private final Messages msg;
     private boolean replaceMode = true;
 
     private final SearchService search;
     private final Supplier<JTextArea> activeEditor;
 
-    public FindReplaceDialog(Frame owner, SearchService search, Supplier<JTextArea> activeEditor) {
-        super(owner, "Find and Replace", false);
+    public FindReplaceDialog(Frame owner, SearchService search, Messages msg, Supplier<JTextArea> activeEditor) {
+        super(owner, msg.get("search.title"), false);
         EdtExecutor.requireEdt();
+        this.msg = msg;
+        matchCaseCheck = new JCheckBox(msg.get("search.match-case"));
+        wrapAroundCheck = new JCheckBox(msg.get("search.wrap-around"), true);
+        replaceBtn = new JButton(msg.get("search.replace"));
+        replaceAllBtn = new JButton(msg.get("search.replace-all"));
         this.search = search;
         this.activeEditor = activeEditor;
         setLayout(new BorderLayout(8, 8));
 
         JPanel formPanel = new JPanel(new GridLayout(2, 2, 8, 8));
         formPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 4, 12));
-        formPanel.add(new JLabel("Find:"));
+        formPanel.add(new JLabel(msg.get("search.find")));
         formPanel.add(findField);
-        formPanel.add(new JLabel("Replace with:"));
+        formPanel.add(new JLabel(msg.get("search.replace-with")));
         formPanel.add(replaceField);
 
         JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -48,14 +55,14 @@ public final class FindReplaceDialog extends JDialog {
         add(centerPanel, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton findBtn = new JButton("Find Next");
+        JButton findBtn = new JButton(msg.get("search.find-next"));
         findBtn.addActionListener(e -> findNext());
 
         replaceBtn.addActionListener(e -> replaceCurrent());
 
         replaceAllBtn.addActionListener(e -> replaceAll());
 
-        JButton closeBtn = new JButton("Close");
+        JButton closeBtn = new JButton(msg.get("search.close"));
         closeBtn.addActionListener(e -> setVisible(false));
 
         btnPanel.add(findBtn);
@@ -70,7 +77,7 @@ public final class FindReplaceDialog extends JDialog {
 
     public void showFor(boolean isReplaceMode) {
         EdtExecutor.requireEdt();
-        setTitle(isReplaceMode ? "Replace" : "Find");
+        setTitle(msg.get(isReplaceMode ? "search.title.replace" : "search.title.find"));
         // In find mode the replace actions must not run with a stale "Replace with" value.
         replaceMode = isReplaceMode;
         replaceField.setEnabled(isReplaceMode);
@@ -99,7 +106,8 @@ public final class FindReplaceDialog extends JDialog {
             activeTextArea.setSelectionEnd(index + query.length());
             return true;
         } else {
-            JOptionPane.showMessageDialog(this, "Text not found: \"" + query + "\"", "Find", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, msg.format("search.not-found", query), msg.get("search.title.find"),
+                    JOptionPane.INFORMATION_MESSAGE);
             return false;
         }
     }
@@ -137,9 +145,11 @@ public final class FindReplaceDialog extends JDialog {
 
         if (count > 0) {
             activeTextArea.setText(result.text());
-            JOptionPane.showMessageDialog(this, "Replaced " + count + " occurrences.", "Replace All", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, msg.format("search.replaced", count), msg.get("search.replace-all"),
+                    JOptionPane.INFORMATION_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(this, "Text not found: \"" + query + "\"", "Replace All", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, msg.format("search.not-found", query), msg.get("search.replace-all"),
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 

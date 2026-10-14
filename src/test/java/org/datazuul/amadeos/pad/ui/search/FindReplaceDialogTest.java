@@ -18,7 +18,8 @@ class FindReplaceDialogTest {
         SwingUtilities.invokeAndWait(() -> {
             JFrame owner = new JFrame();
             JTextArea area = new JTextArea("one one");
-            FindReplaceDialog dialog = new FindReplaceDialog(owner, new SearchService(), () -> area);
+            FindReplaceDialog dialog = new FindReplaceDialog(owner, new SearchService(), org.datazuul.amadeos.pad.ui.main.TestTexts.english(),
+                    () -> area);
             try {
                 field(dialog, "findField").setText("one");
                 field(dialog, "replaceField").setText("two");

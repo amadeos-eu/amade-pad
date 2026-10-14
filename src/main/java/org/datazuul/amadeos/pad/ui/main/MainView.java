@@ -24,6 +24,8 @@ public interface MainView {
 
     void showError(String message);
 
+    void showInfo(String message);
+
     /** Asks whether a document that its charset cannot store should be saved as UTF-8. */
     boolean confirmSaveAsUtf8(String charsetName);
 

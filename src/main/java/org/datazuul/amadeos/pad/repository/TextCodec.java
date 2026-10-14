@@ -44,7 +44,7 @@ public final class TextCodec {
             return document(decodeStrict(StandardCharsets.UTF_16LE, bytes, 2), StandardCharsets.UTF_16LE, true);
         }
         if (looksBinary(bytes)) {
-            throw new IOException("The file appears to be binary and cannot be edited as text");
+            throw new BinaryFileException();
         }
         try {
             return document(decodeStrict(StandardCharsets.UTF_8, bytes, 0), StandardCharsets.UTF_8, false);
