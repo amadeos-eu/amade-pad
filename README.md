@@ -3,7 +3,7 @@
 **amade-pad** is an authentic Motif/CDE-styled text editor developed for the [amadeOS](https://github.com/datazuul/amadeos) desktop environment.
 
 ![License](https://img.shields.io/badge/license-EUPL--1.2-blue)
-![Java](https://img.shields.io/badge/Java-21-orange)
+![Java](https://img.shields.io/badge/Java-25-orange)
 ![Debian](https://img.shields.io/badge/Debian-package-red)
 
 ---
@@ -24,7 +24,7 @@
 
 ## Architecture
 
-The Java 21 Swing application uses Guice for dependency injection. Theme, Motif look and start-up
+The Java 25 Swing application uses Guice for dependency injection. Theme, Motif look and start-up
 come from [amade-commons](https://github.com/datazuul/amade-commons): the editor follows the desktop
 theme chosen in the Style Manager immediately, including the dark *Dark Slate*. `bootstrap`
 wires `ui.main.MainWindow`, `MainMenuBar`, and `MainPresenter`; editor components
@@ -46,7 +46,7 @@ and shuts down the I/O executor without calling `System.exit`.
 ## Building and Testing
 
 ### Prerequisites
-- Java 21+ JDK
+- Java 25+ JDK
 - `amade-commons` is taken from JitPack; a checkout in `../amade-commons` is built instead if present
 - (Optional) `dpkg-deb` for building `.deb` packages
 
