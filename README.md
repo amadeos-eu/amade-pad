@@ -16,7 +16,7 @@
 - **Find & Replace:** Non-modal search dialog with wrap-around and match-case support.
 - **Encodings & Line Endings:** Detects UTF-8, UTF-16 (with BOM), Windows-1252 and ISO-8859-1 as well as LF, CRLF and CR line endings, and saves files back in the same format.
 - **Integrated Undo / Redo:** Full document edit history (`Ctrl+Z`, `Ctrl+Y`).
-- **Five Languages:** English, Deutsch, Français, Español and Italiano. amade-pad follows the amadeOS desktop language; *Options → Language* overrides it for amade-pad alone (takes effect at the next start). Outside amadeOS it uses `LANG`. Texts live in `src/main/resources/org/datazuul/amadeos/pad/messages*.properties` (UTF-8); a test checks that every translation is complete.
+- **Five Languages:** English, Deutsch, Français, Español and Italiano. amade-pad follows the amadeOS desktop language; *Options → Language* overrides it for amade-pad alone (takes effect at the next start). Outside amadeOS it uses `LANG`. Texts live in `src/main/resources/eu/amadeos/pad/messages*.properties` (UTF-8); a test checks that every translation is complete.
 - **Debian Packaging:** Direct creation of `.deb` packages installable via `dpkg -i` or drop-in `config/packages.chroot/` in amadeOS.
 - **XDG Integration:** Ships Freedesktop-compliant `amade-pad.desktop` entry automatically picked up by CDE Front Panel drawers.
 
