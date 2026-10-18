@@ -13,7 +13,7 @@ java {
 }
 
 application {
-    mainClass = 'eu.amadeos.pad.bootstrap.AmadePadApplication'
+    mainClass = 'eu.amadeos.apps.pad.bootstrap.AmadePadApplication'
 }
 
 repositories {
@@ -43,7 +43,7 @@ jar {
     archiveBaseName = 'amade-pad'
     manifest {
         attributes(
-            'Main-Class': 'eu.amadeos.pad.bootstrap.AmadePadApplication',
+            'Main-Class': 'eu.amadeos.apps.pad.bootstrap.AmadePadApplication',
             'Implementation-Title': 'amade-pad',
             'Implementation-Version': project.version
         )
