@@ -78,6 +78,7 @@ public final class MainPresenter {
         if (path != null) open(path);
     }
 
+    // --8<-- [start:open]
     public CompletableFuture<Void> open(Path path) {
         if (!available()) return CompletableFuture.completedFuture(null);
         Path normalized = path.toAbsolutePath().normalize();
@@ -99,6 +100,7 @@ public final class MainPresenter {
             return null;
         }, edt);
     }
+    // --8<-- [end:open]
 
     public CompletableFuture<Boolean> saveCurrent(boolean saveAs) {
         if (!available()) return CompletableFuture.completedFuture(false);
@@ -106,6 +108,7 @@ public final class MainPresenter {
         return editor == null ? CompletableFuture.completedFuture(false) : save(editor, saveAs);
     }
 
+    // --8<-- [start:save]
     private CompletableFuture<Boolean> save(EditorView editor, boolean saveAs) {
         if (saves.containsKey(editor)) return saves.get(editor);
         Path path = editor.state().path();
@@ -123,7 +126,9 @@ public final class MainPresenter {
         }, edt);
         return result;
     }
+    // --8<-- [end:save]
 
+    // --8<-- [start:write]
     /**
      * Writes the snapshot; if its charset cannot store the text, offers to save as UTF-8 instead
      * of replacing characters.
@@ -143,6 +148,7 @@ public final class MainPresenter {
             return CompletableFuture.completedFuture(false);
         }, edt).thenCompose(next -> next);
     }
+    // --8<-- [end:write]
 
     public CompletableFuture<Boolean> closeActiveTab() {
         if (!available()) return CompletableFuture.completedFuture(false);
@@ -240,6 +246,7 @@ public final class MainPresenter {
         if (available()) view.showAbout();
     }
 
+    // --8<-- [start:language]
     /**
      * Stores the application's own language ("Options > Language"); empty follows the desktop. The
      * language changes at the next start, which the user is told.
@@ -256,12 +263,14 @@ public final class MainPresenter {
             view.showInfo(Messages.commons(msg.locale()).format("language.restart", "amade-pad"));
         }
     }
+    // --8<-- [end:language]
 
     private void report(String key, Throwable error) {
         LOG.error(key, error);
         view.showError(msg.format(key, describe(rootCause(error))));
     }
 
+    // --8<-- [start:describe]
     /** A translated reason for the usual errors, else the exception's own message. */
     private String describe(Throwable error) {
         if (error instanceof NoSuchFileException) return msg.get("error.not-found");
@@ -270,6 +279,7 @@ public final class MainPresenter {
         if (error instanceof UnencodableTextException u) return msg.format("error.unencodable", u.charset().name());
         return error.getMessage();
     }
+    // --8<-- [end:describe]
 
     private static Throwable rootCause(Throwable error) {
         Throwable cause = error;

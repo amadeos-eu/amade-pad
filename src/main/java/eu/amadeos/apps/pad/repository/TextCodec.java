@@ -33,6 +33,7 @@ public final class TextCodec {
     private static final List<Charset> LEGACY_FALLBACKS = List.of(
             Charset.forName("windows-1252"), StandardCharsets.ISO_8859_1);
 
+    // --8<-- [start:decode]
     public TextDocument decode(byte[] bytes) throws IOException {
         if (startsWith(bytes, UTF8_BOM)) {
             return document(decodeStrict(StandardCharsets.UTF_8, bytes, UTF8_BOM.length), StandardCharsets.UTF_8, true);
@@ -59,6 +60,7 @@ public final class TextCodec {
             throw notUtf8;
         }
     }
+    // --8<-- [end:decode]
 
     public byte[] encode(TextDocument document) throws IOException {
         TextFormat format = document.format();

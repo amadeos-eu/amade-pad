@@ -92,6 +92,7 @@ exec /usr/bin/java -jar /opt/amade-pad/amade-pad.jar "\$@"
 """
         launcher.setExecutable(true, false)
 
+        // --8<-- [start:desktop]
         // 3. Create desktop entry
         def desktopFile = new File(appDir, "amade-pad.desktop")
         desktopFile.text = """[Desktop Entry]
@@ -107,6 +108,7 @@ Categories=Utility;TextEditor;
 MimeType=text/plain;text/x-java;text/x-c;text/x-shellscript;
 StartupNotify=true
 """
+        // --8<-- [end:desktop]
 
         // 4. Generate/copy application icon
         def iconSource = file("src/main/resources/icons/amade-pad.png")
@@ -154,6 +156,7 @@ Description: Authentic Motif/CDE-styled text editor for amadeOS
     }
 }
 
+// --8<-- [start:install]
 tasks.register('installToAmadeOs') {
     dependsOn 'deb'
     description = 'Builds and drops the .deb package into amadeos/config/packages.chroot/'
@@ -173,3 +176,4 @@ tasks.register('installToAmadeOs') {
         println "[installToAmadeOs] Copied ${debFile.name} to ${targetDir.absolutePath}"
     }
 }
+// --8<-- [end:install]

@@ -91,12 +91,14 @@ class PadModuleTest {
         }
     }
 
+    // --8<-- [start:wiring]
     /** The production wiring, with theme and config directories inside the test directory. */
     private Injector injector(ExecutorService executor) {
         ThemeStore themes = new ThemeStore(directory, new ThemeRegistry());
         XdgDirectories xdg = new XdgDirectories(Map.of(), directory.toString());
         return Guice.createInjector(new CommonsModule(AmadePadApplication.APP, executor, themes, xdg), new PadModule());
     }
+    // --8<-- [end:wiring]
 
     private static <T> T onEdt(Callable<T> action) throws Exception {
         FutureTask<T> task = new FutureTask<>(action);

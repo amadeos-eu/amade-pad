@@ -41,10 +41,12 @@ class MainPresenterTest {
     @BeforeEach
     void setUp() throws Exception {
         onEdt(() -> {
+            // --8<-- [start:edt-view]
             view = mock(MainView.class, invocation -> {
                 assertTrue(SwingUtilities.isEventDispatchThread(), "All view access must be on EDT");
                 return RETURNS_DEFAULTS.answer(invocation);
             });
+            // --8<-- [end:edt-view]
             service = mock(DocumentService.class);
             executor = mock(ExecutorService.class);
             editor = mock(EditorView.class);
@@ -104,6 +106,7 @@ class MainPresenterTest {
         verify(editor, never()).load(any(), any(TextDocument.class));
     }
 
+    // --8<-- [start:snapshot]
     @Test
     void saveUsesImmutableSnapshotAndDoesNotClearLaterEdits() throws Exception {
         CompletableFuture<Void> io = new CompletableFuture<>();
@@ -116,6 +119,7 @@ class MainPresenterTest {
         verify(editor).saved(path, 1L, TextFormat.DEFAULT);
         assertTrue(onEdt(state::isModified));
     }
+    // --8<-- [end:snapshot]
 
     @Test
     void saveAsFailurePreservesOriginalIdentityAndDirtyState() throws Exception {

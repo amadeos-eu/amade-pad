@@ -23,6 +23,7 @@ public final class MainMenuBar extends JMenuBar {
         EdtExecutor.requireEdt();
         this.msg = msg;
         setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+        // --8<-- [start:menus]
         JMenu file = menu("menu.file");
         item(file, "menu.file.new", KeyEvent.VK_N, CTRL, presenter::newDocument);
         item(file, "menu.file.open", KeyEvent.VK_O, CTRL, presenter::chooseOpen);
@@ -31,6 +32,7 @@ public final class MainMenuBar extends JMenuBar {
         file.addSeparator();
         item(file, "menu.file.close-tab", KeyEvent.VK_W, CTRL, presenter::closeActiveTab);
         item(file, "menu.file.exit", KeyEvent.VK_Q, CTRL, presenter::exit);
+        // --8<-- [end:menus]
         JMenu edit = menu("menu.edit");
         item(edit, "menu.edit.undo", KeyEvent.VK_Z, CTRL, () -> presenter.edit(Edit.UNDO));
         item(edit, "menu.edit.redo", KeyEvent.VK_Y, CTRL, () -> presenter.edit(Edit.REDO));
@@ -55,6 +57,7 @@ public final class MainMenuBar extends JMenuBar {
         item(menu("menu.help"), "menu.help.about", 0, 0, presenter::about);
     }
 
+    // --8<-- [start:language-menu]
     /** "Desktop setting (Deutsch)" and the five languages; the choice applies at the next start. */
     private JMenu languageMenu(MainPresenter presenter, LocaleSettings locales) {
         JMenu menu = new JMenu(msg.get("menu.options.language"));
@@ -76,7 +79,9 @@ public final class MainMenuBar extends JMenuBar {
         }
         return menu;
     }
+    // --8<-- [end:language-menu]
 
+    // --8<-- [start:helpers]
     private JMenu menu(String key) {
         JMenu menu = Mnemonics.apply(new JMenu(), msg.get(key));
         add(menu);
@@ -89,4 +94,5 @@ public final class MainMenuBar extends JMenuBar {
         item.addActionListener(e -> action.run());
         menu.add(item);
     }
+    // --8<-- [end:helpers]
 }

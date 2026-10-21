@@ -133,6 +133,7 @@ public final class MainWindow extends JFrame implements MainView {
         };
     }
 
+    // --8<-- [start:show-error]
     @Override
     public void showError(String message) {
         EdtExecutor.requireEdt();
@@ -142,6 +143,7 @@ public final class MainWindow extends JFrame implements MainView {
         text.setOpaque(false); // shows the dialog colour of the current theme
         JOptionPane.showMessageDialog(this, text, msg.get("dialog.error.title"), JOptionPane.ERROR_MESSAGE);
     }
+    // --8<-- [end:show-error]
 
     @Override
     public void showInfo(String message) {
