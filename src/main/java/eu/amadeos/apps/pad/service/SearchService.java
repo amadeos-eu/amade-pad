@@ -7,6 +7,7 @@ public final class SearchService {
         return index < 0 && wrap ? search(text, query, 0, matchCase) : index;
     }
 
+    // --8<-- [start:search]
     private int search(String text, String query, int from, boolean matchCase) {
         if (matchCase) return text.indexOf(query, from);
         // Case conversion can change string length; regionMatches preserves editor offsets.
@@ -15,6 +16,7 @@ public final class SearchService {
         }
         return -1;
     }
+    // --8<-- [end:search]
 
     public boolean matches(String selected, String query, boolean matchCase) {
         return selected != null && !query.isEmpty()

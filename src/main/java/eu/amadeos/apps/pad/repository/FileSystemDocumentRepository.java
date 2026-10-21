@@ -29,6 +29,7 @@ public final class FileSystemDocumentRepository implements DocumentRepository {
         return codec.decode(Files.readAllBytes(path));
     }
 
+    // --8<-- [start:atomic-write]
     @Override
     public void write(Path path, TextDocument document) throws IOException {
         // Encode first: an unencodable character must fail before any file is touched.
@@ -56,6 +57,7 @@ public final class FileSystemDocumentRepository implements DocumentRepository {
             Files.deleteIfExists(temp);
         }
     }
+    // --8<-- [end:atomic-write]
 
     /**
      * Keeps the permissions of an existing file. Temp files are created owner-only, so a new

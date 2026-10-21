@@ -32,6 +32,7 @@ public final class EditorTab extends JPanel implements EditorView {
         scrollPane = new JScrollPane(textArea);
         scrollPane.setRowHeaderView(lineNumbers);
         add(scrollPane, BorderLayout.CENTER);
+        // --8<-- [start:changes]
         textArea.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
                 changed();
@@ -50,6 +51,7 @@ public final class EditorTab extends JPanel implements EditorView {
                 onStateChanged.run();
             }
         });
+        // --8<-- [end:changes]
     }
 
     public JTextArea getTextArea() {

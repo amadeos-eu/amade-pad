@@ -21,6 +21,7 @@ public final class DocumentService {
         this.executor = executor;
     }
 
+    // --8<-- [start:open]
     public CompletableFuture<TextDocument> open(Path path) {
         Objects.requireNonNull(path);
         return CompletableFuture.supplyAsync(() -> {
@@ -31,6 +32,7 @@ public final class DocumentService {
             }
         }, executor);
     }
+    // --8<-- [end:open]
 
     public CompletableFuture<Void> save(Path path, TextDocument document) {
         Objects.requireNonNull(path);
