@@ -59,7 +59,7 @@ and shuts down the I/O executor without calling `System.exit`.
 ```bash
 ./gradlew jar
 # Run directly:
-java -jar build/libs/amade-pad-0.1.0.jar
+java -jar build/libs/amade-pad-0.0.0-dev.0.jar
 ```
 
 ### Run with Gradle
@@ -72,7 +72,7 @@ java -jar build/libs/amade-pad-0.1.0.jar
 ### Build Debian Package
 ```bash
 ./gradlew deb
-# Package created at: build/distributions/amade-pad_0.1.0_all.deb
+# Package created at: build/distributions/amade-pad_0.0.0~dev.0_all.deb
 ```
 
 ### Install into amadeOS Live Build
