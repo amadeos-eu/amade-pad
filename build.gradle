@@ -4,7 +4,11 @@ plugins {
 }
 
 group = 'eu.amadeos'
-version = '0.1.0'
+// CI computes the version from the Conventional Commits since the last release tag and passes it as
+// -PappVersion (datazuul/amadeos-ci scripts/next-version.sh); a build without it is a local development build.
+version = findProperty('appVersion') ?: '0.0.0-dev.0'
+// Debian sorts 1.1.0~dev.57 before 1.1.0 (with - it would sort after it).
+def debVersion = version.toString().replace('-', '~')
 
 java {
     toolchain {
@@ -136,7 +140,7 @@ StartupNotify=true
         // 6. Create Debian package control file
         def controlFile = new File(debianDir, "control")
         controlFile.text = """Package: amade-pad
-Version: ${project.version}
+Version: ${debVersion}
 Section: editors
 Priority: optional
 Architecture: all
@@ -149,7 +153,7 @@ Description: Authentic Motif/CDE-styled text editor for amadeOS
 """
 
         // 7. Build .deb package using dpkg-deb
-        def debFile = new File(distDir, "amade-pad_${project.version}_all.deb")
+        def debFile = new File(distDir, "amade-pad_${debVersion}_all.deb")
         def process = new ProcessBuilder("dpkg-deb", "--root-owner-group", "--build", stagingDir.absolutePath, debFile.absolutePath)
                 .redirectErrorStream(true)
                 .start()
@@ -175,7 +179,7 @@ tasks.register('installToAmadeOs') {
             targetDir.mkdirs()
         }
         def buildDirFile = layout.buildDirectory.get().asFile
-        def debFile = new File(buildDirFile, "distributions/amade-pad_${project.version}_all.deb")
+        def debFile = new File(buildDirFile, "distributions/amade-pad_${debVersion}_all.deb")
         copy {
             from debFile
             into targetDir
