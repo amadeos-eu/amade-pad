@@ -55,8 +55,8 @@
     <category>TextEditor</category>
   </categories>
 
-  <url type="homepage">https://github.com/datazuul/amade-pad</url>
-  <url type="bugtracker">https://github.com/datazuul/amade-pad/issues</url>
+  <url type="homepage">https://github.com/amadeos-eu/amade-pad</url>
+  <url type="bugtracker">https://github.com/amadeos-eu/amade-pad/issues</url>
   <developer id="eu.amadeos">
     <name>amadeOS Project</name>
   </developer>
@@ -68,7 +68,7 @@
       <caption xml:lang="fr">Deux fichiers ouverts dans des onglets</caption>
       <caption xml:lang="es">Dos archivos abiertos en pestañas</caption>
       <caption xml:lang="it">Due file aperti in schede</caption>
-      <image>https://raw.githubusercontent.com/datazuul/amade-pad/main/docs/screenshots/amade-pad.png</image>
+      <image>https://raw.githubusercontent.com/amadeos-eu/amade-pad/main/docs/screenshots/amade-pad.png</image>
     </screenshot>
   </screenshots>
 
