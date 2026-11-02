@@ -1,5 +1,6 @@
 package eu.amadeos.apps.pad.ui.main;
 
+import eu.amadeos.commons.chars.SpecialCharacters;
 import com.google.inject.Inject;
 import eu.amadeos.commons.i18n.LocaleSettings;
 import eu.amadeos.commons.i18n.Messages;
@@ -54,7 +55,9 @@ public final class MainWindow extends JFrame implements MainView {
 
     public void bind(MainPresenter presenter) {
         EdtExecutor.requireEdt();
-        setJMenuBar(new MainMenuBar(presenter, msg, locales));
+        MainMenuBar menuBar = new MainMenuBar(presenter, msg, locales);
+        setJMenuBar(menuBar);
+        SpecialCharacters.install(this, menuBar.editMenu(), msg.locale());
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {

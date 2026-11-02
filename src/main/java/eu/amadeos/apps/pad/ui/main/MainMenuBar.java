@@ -18,6 +18,7 @@ import java.util.Optional;
 public final class MainMenuBar extends JMenuBar {
     private static final int CTRL = InputEvent.CTRL_DOWN_MASK;
     private final Messages msg;
+    private final JMenu edit;
 
     public MainMenuBar(MainPresenter presenter, Messages msg, LocaleSettings locales) {
         EdtExecutor.requireEdt();
@@ -33,7 +34,7 @@ public final class MainMenuBar extends JMenuBar {
         item(file, "menu.file.close-tab", KeyEvent.VK_W, CTRL, presenter::closeActiveTab);
         item(file, "menu.file.exit", KeyEvent.VK_Q, CTRL, presenter::exit);
         // --8<-- [end:menus]
-        JMenu edit = menu("menu.edit");
+        edit = menu("menu.edit");
         item(edit, "menu.edit.undo", KeyEvent.VK_Z, CTRL, () -> presenter.edit(Edit.UNDO));
         item(edit, "menu.edit.redo", KeyEvent.VK_Y, CTRL, () -> presenter.edit(Edit.REDO));
         edit.addSeparator();
@@ -95,4 +96,9 @@ public final class MainMenuBar extends JMenuBar {
         menu.add(item);
     }
     // --8<-- [end:helpers]
+
+    /** The Edit menu; the window adds Special Characters to it (amade-commons). */
+    JMenu editMenu() {
+        return edit;
+    }
 }
