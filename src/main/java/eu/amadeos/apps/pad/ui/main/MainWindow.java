@@ -35,6 +35,9 @@ public final class MainWindow extends JFrame implements MainView {
         this.msg = msg;
         this.locales = locales;
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        // The program icon in the window frame and the task lists, as the other amade programs have it
+        java.net.URL icon = getClass().getResource("/icons/amade-pad.png");
+        if (icon != null) setIconImage(new javax.swing.ImageIcon(icon).getImage());
         setPreferredSize(new Dimension(800, 600));
         setLayout(new BorderLayout());
         search = new FindReplaceDialog(this, searchService, msg, () -> {
