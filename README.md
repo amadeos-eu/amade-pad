@@ -6,6 +6,8 @@
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Debian](https://img.shields.io/badge/Debian-package-red)
 
+![Text Editor](docs/screenshots/amade-pad.png)
+
 ---
 
 ## Features
