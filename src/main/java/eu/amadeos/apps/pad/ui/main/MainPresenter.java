@@ -4,16 +4,22 @@ import com.google.inject.Inject;
 import eu.amadeos.commons.i18n.Language;
 import eu.amadeos.commons.i18n.LocaleSettings;
 import eu.amadeos.commons.i18n.Messages;
+import eu.amadeos.apps.pad.domain.Indentation;
+import eu.amadeos.apps.pad.domain.SyntaxLanguage;
 import eu.amadeos.apps.pad.domain.TextDocument;
 import eu.amadeos.apps.pad.domain.UnencodableTextException;
 import eu.amadeos.apps.pad.repository.BinaryFileException;
+import eu.amadeos.apps.pad.repository.EditorSettings;
 import eu.amadeos.apps.pad.service.DocumentService;
+import eu.amadeos.apps.pad.service.format.DocumentFormatter;
+import eu.amadeos.apps.pad.service.format.FormatException;
 import eu.amadeos.commons.swing.EdtExecutor;
 import eu.amadeos.apps.pad.ui.editor.EditorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -37,6 +43,8 @@ public final class MainPresenter {
     private final EdtExecutor edt;
     private final Messages msg;
     private final LocaleSettings locales;
+    private final EditorSettings settings;
+    private final DocumentFormatter formatter;
     private final Map<EditorView, CompletableFuture<Boolean>> saves = new IdentityHashMap<>();
     private final Set<EditorView> closing = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<Path> opening = new HashSet<>();
@@ -44,16 +52,22 @@ public final class MainPresenter {
     private boolean closed;
     private boolean wordWrap;
     private boolean lineNumbers = true;
+    private boolean codeFolding = true;
+    private boolean bracketMatching = true;
+    private Indentation defaultIndentation;
 
     @Inject
     public MainPresenter(MainView view, DocumentService documents, ExecutorService executor, EdtExecutor edt,
-                         Messages msg, LocaleSettings locales) {
+                         Messages msg, LocaleSettings locales, EditorSettings settings, DocumentFormatter formatter) {
         this.view = view;
         this.documents = documents;
         this.executor = executor;
         this.edt = edt;
         this.msg = msg;
         this.locales = locales;
+        this.settings = settings;
+        this.formatter = formatter;
+        this.defaultIndentation = settings.indentation();
     }
 
     private boolean available() {
@@ -69,6 +83,9 @@ public final class MainPresenter {
         EditorView editor = view.addEditor();
         editor.setWordWrap(wordWrap);
         editor.setLineNumbersVisible(lineNumbers);
+        editor.setCodeFolding(codeFolding);
+        editor.setBracketMatching(bracketMatching);
+        editor.setIndentation(defaultIndentation);
         return editor;
     }
 
@@ -94,13 +111,24 @@ public final class MainPresenter {
                 report("error.open", error);
                 if (view.editors().isEmpty()) addEditor();
             } else {
-                addEditor().load(normalized, content);
+                EditorView editor = addEditor();
+                editor.load(normalized, content);
+                recognise(editor, normalized, content.text());
             }
             opening.remove(normalized);
             return null;
         }, edt);
     }
     // --8<-- [end:open]
+
+    // --8<-- [start:recognise]
+    /** Colours a just opened file as its language and takes over the indentation it already uses. */
+    private void recognise(EditorView editor, Path path, String text) {
+        SyntaxLanguage language = SyntaxLanguage.detect(path, text);
+        editor.setLanguage(language, false);
+        editor.setIndentation(Indentation.forDocument(text, language, defaultIndentation));
+    }
+    // --8<-- [end:recognise]
 
     public CompletableFuture<Boolean> saveCurrent(boolean saveAs) {
         if (!available()) return CompletableFuture.completedFuture(false);
@@ -137,6 +165,11 @@ public final class MainPresenter {
         return documents.save(target, snapshot).handleAsync((unused, error) -> {
             if (error == null) {
                 editor.saved(target, revision, snapshot.format());
+                if (!editor.languageChosen()) {
+                    // "Save As" with a new extension (notes.txt as notes.md) changes the colouring too.
+                    SyntaxLanguage language = SyntaxLanguage.detect(target, snapshot.text());
+                    if (language != editor.language()) editor.setLanguage(language, false);
+                }
                 return CompletableFuture.completedFuture(true);
             }
             if (rootCause(error) instanceof UnencodableTextException unencodable
@@ -232,6 +265,77 @@ public final class MainPresenter {
         if (!available()) return;
         lineNumbers = enabled;
         view.editors().forEach(editor -> editor.setLineNumbersVisible(enabled));
+    }
+
+    // --8<-- [start:syntax]
+    /** View → Syntax: the user's choice wins over the file name from now on. */
+    public void setSyntax(SyntaxLanguage language) {
+        if (!available()) return;
+        EditorView editor = view.activeEditor();
+        if (editor != null) editor.setLanguage(language, true);
+    }
+
+    /** Options → Indentation: applies to the current document and becomes the default for new ones. */
+    public void setIndentation(Indentation indentation) {
+        if (!available()) return;
+        EditorView editor = view.activeEditor();
+        if (editor != null) editor.setIndentation(indentation);
+        defaultIndentation = indentation;
+        try {
+            settings.setIndentation(indentation);
+        } catch (UncheckedIOException e) {
+            report("error.settings", e.getCause());
+        }
+    }
+    // --8<-- [end:syntax]
+
+    /** The language of the current document, for the check marks of the View → Syntax menu. */
+    public Optional<SyntaxLanguage> activeLanguage() {
+        EditorView editor = available() ? view.activeEditor() : null;
+        return editor == null ? Optional.empty() : Optional.of(editor.language());
+    }
+
+    /** The indentation of the current document, else the default; for the Options → Indentation menu. */
+    public Indentation activeIndentation() {
+        EditorView editor = available() ? view.activeEditor() : null;
+        return editor == null ? defaultIndentation : editor.indentation();
+    }
+
+    public void setCodeFolding(boolean enabled) {
+        if (!available()) return;
+        codeFolding = enabled;
+        view.editors().forEach(editor -> editor.setCodeFolding(enabled));
+    }
+
+    public void setBracketMatching(boolean enabled) {
+        if (!available()) return;
+        bracketMatching = enabled;
+        view.editors().forEach(editor -> editor.setBracketMatching(enabled));
+    }
+
+    // --8<-- [start:format]
+    /** Edit → Format Document: indents JSON and XML anew; invalid text is left alone with a message. */
+    public void formatDocument() {
+        if (!available()) return;
+        EditorView editor = view.activeEditor();
+        if (editor == null) return;
+        SyntaxLanguage language = editor.language();
+        if (!formatter.supports(language)) {
+            view.showInfo(msg.format("format.unsupported", languageName(language)));
+            return;
+        }
+        try {
+            editor.replaceText(formatter.format(language, editor.text(), editor.indentation()));
+        } catch (FormatException e) {
+            LOG.info("Not formatted: {}", e.getMessage());
+            view.showError(msg.format("format.invalid", languageName(language), e.line(), e.getMessage()));
+        }
+    }
+    // --8<-- [end:format]
+
+    /** The name of a language in menus and messages; plain text has a translated one. */
+    public String languageName(SyntaxLanguage language) {
+        return language == SyntaxLanguage.PLAIN ? msg.get("syntax.plain") : language.label();
     }
 
     public void search(boolean replace) {

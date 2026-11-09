@@ -4,6 +4,8 @@ import eu.amadeos.commons.chars.SpecialCharacters;
 import com.google.inject.Inject;
 import eu.amadeos.commons.i18n.LocaleSettings;
 import eu.amadeos.commons.i18n.Messages;
+import eu.amadeos.apps.pad.domain.Indentation;
+import eu.amadeos.apps.pad.domain.SyntaxLanguage;
 import eu.amadeos.apps.pad.service.SearchService;
 import eu.amadeos.commons.swing.EdtExecutor;
 import eu.amadeos.apps.pad.ui.editor.EditorTab;
@@ -204,6 +206,15 @@ public final class MainWindow extends JFrame implements MainView {
         return editor.state().title(msg.get("document.untitled"));
     }
 
+    /** "Java | Spaces: 2" or "Makefile | Tabs: 8". */
+    private String syntaxStatus(EditorTab editor) {
+        SyntaxLanguage language = editor.language();
+        String name = language == SyntaxLanguage.PLAIN ? msg.get("syntax.plain") : language.label();
+        Indentation indentation = editor.indentation();
+        return name + " | " + msg.format(indentation.tabs() ? "status.indent.tabs" : "status.indent.spaces",
+                indentation.width());
+    }
+
     private void updateStatus() {
         EditorTab editor = (EditorTab) activeEditor();
         if (editor == null) {
@@ -216,8 +227,8 @@ public final class MainWindow extends JFrame implements MainView {
             int caret = Math.min(area.getCaretPosition(), area.getDocument().getLength());
             int line = area.getLineOfOffset(caret);
             int column = caret - area.getLineStartOffset(line) + 1;
-            status.setText(msg.format("status.position", line + 1, column, editor.state().format().label(),
-                    area.getDocument().getLength()));
+            status.setText(syntaxStatus(editor) + " | " + msg.format("status.position", line + 1, column,
+                    editor.state().format().label(), area.getDocument().getLength()));
         } catch (BadLocationException e) {
             throw new IllegalStateException("Invalid caret position", e);
         }

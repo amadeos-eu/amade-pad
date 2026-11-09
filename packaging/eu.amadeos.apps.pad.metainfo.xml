@@ -25,6 +25,11 @@
     <p xml:lang="es">amade-pad es el editor de texto del escritorio amadeOS. Abre varios archivos en pestañas, muestra los números de línea y conserva la codificación y los finales de línea de cada archivo al guardar.</p>
     <p xml:lang="it">amade-pad è l'editor di testo del desktop amadeOS. Apre più file in schede, mostra i numeri di riga e conserva la codifica e i fine riga di ogni file al salvataggio.</p>
     <ul>
+      <li>Syntax colours for about 35 programming and markup languages, automatic indentation, and formatting of JSON and XML</li>
+      <li xml:lang="de">Syntaxfarben für rund 35 Programmier- und Auszeichnungssprachen, automatische Einrückung und Formatieren von JSON und XML</li>
+      <li xml:lang="fr">Coloration syntaxique pour environ 35 langages de programmation et de balisage, indentation automatique et mise en forme de JSON et XML</li>
+      <li xml:lang="es">Colores de sintaxis para unos 35 lenguajes de programación y de marcado, sangría automática y formato de JSON y XML</li>
+      <li xml:lang="it">Colori della sintassi per circa 35 linguaggi di programmazione e di markup, rientro automatico e formattazione di JSON e XML</li>
       <li>Find and replace with wrap-around and match case</li>
       <li xml:lang="de">Suchen und Ersetzen, auch rundum und mit Groß- und Kleinschreibung</li>
       <li xml:lang="fr">Rechercher et remplacer, avec bouclage et respect de la casse</li>
@@ -69,6 +74,14 @@
       <caption xml:lang="es">Dos archivos abiertos en pestañas</caption>
       <caption xml:lang="it">Due file aperti in schede</caption>
       <image>https://raw.githubusercontent.com/amadeos-eu/amade-pad/main/docs/screenshots/amade-pad.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A Java file with syntax colours in the dark look</caption>
+      <caption xml:lang="de">Eine Java-Datei mit Syntaxfarben im dunklen Look</caption>
+      <caption xml:lang="fr">Un fichier Java avec coloration syntaxique dans l'apparence sombre</caption>
+      <caption xml:lang="es">Un archivo Java con colores de sintaxis en el aspecto oscuro</caption>
+      <caption xml:lang="it">Un file Java con i colori della sintassi nell'aspetto scuro</caption>
+      <image>https://raw.githubusercontent.com/amadeos-eu/amade-pad/main/docs/screenshots/amade-pad-syntax.png</image>
     </screenshot>
   </screenshots>
 

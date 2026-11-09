@@ -12,6 +12,10 @@ import javax.swing.SwingUtilities;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import eu.amadeos.apps.pad.domain.DocumentState;
+import eu.amadeos.apps.pad.domain.Indentation;
+import eu.amadeos.apps.pad.domain.SyntaxLanguage;
+import eu.amadeos.apps.pad.repository.EditorSettings;
+import eu.amadeos.apps.pad.service.format.DocumentFormatter;
 import eu.amadeos.apps.pad.domain.TextDocument;
 import eu.amadeos.apps.pad.domain.TextFormat;
 import eu.amadeos.apps.pad.domain.UnencodableTextException;
@@ -33,6 +37,7 @@ class MainPresenterTest {
     private final java.nio.file.Path config = TestTexts.tempDir();
     private final eu.amadeos.commons.i18n.LocaleSettings locales = TestTexts.locales(config);
     private EditorView editor;
+    private EditorSettings settings;
     private DocumentState state;
     private final List<EditorView> editors = new ArrayList<>();
     private final Path path = Path.of("sample.txt").toAbsolutePath().normalize();
@@ -75,7 +80,10 @@ class MainPresenterTest {
                 editors.remove(invocation.getArgument(0));
                 return null;
             }).when(view).removeEditor(any());
-            presenter = new MainPresenter(view, service, executor, new EdtExecutor(), TestTexts.english(), locales);
+            settings = mock(EditorSettings.class);
+            when(settings.indentation()).thenReturn(Indentation.DEFAULT);
+            presenter = new MainPresenter(view, service, executor, new EdtExecutor(), TestTexts.english(), locales,
+                    settings, new DocumentFormatter());
             return null;
         });
     }
@@ -345,6 +353,61 @@ class MainPresenterTest {
         verify(view).showSearch(true);
         verify(view).findNext();
         verify(view).showAbout();
+    }
+
+    @Test
+    void openedFileGetsItsLanguageAndItsOwnIndentation() throws Exception {
+        Path script = Path.of("tool.py").toAbsolutePath().normalize();
+        TextDocument loaded = new TextDocument("def main():\n    return 1\n", TextFormat.DEFAULT);
+        when(service.open(script)).thenReturn(CompletableFuture.completedFuture(loaded));
+        onEdt(() -> { editors.clear(); return null; });
+        onEdt(() -> presenter.open(script)).join();
+        verify(editor).setLanguage(SyntaxLanguage.PYTHON, false);
+        verify(editor).setIndentation(Indentation.DEFAULT);
+        verify(editor).setIndentation(new Indentation(4, false));
+    }
+
+    @Test
+    void saveAsWithNewExtensionChangesTheGuessedLanguageButNotAChosenOne() throws Exception {
+        Path markdown = Path.of("notes.md").toAbsolutePath().normalize();
+        onEdt(() -> when(view.chooseSavePath(any())).thenReturn(markdown));
+        when(service.save(eq(markdown), any())).thenReturn(CompletableFuture.completedFuture(null));
+        when(editor.language()).thenReturn(SyntaxLanguage.PLAIN);
+        assertTrue(onEdt(() -> presenter.saveCurrent(true)).join());
+        verify(editor).setLanguage(SyntaxLanguage.MARKDOWN, false);
+        when(editor.languageChosen()).thenReturn(true);
+        assertTrue(onEdt(() -> presenter.saveCurrent(true)).join());
+        verify(editor, times(1)).setLanguage(any(), anyBoolean());
+    }
+
+    @Test
+    void indentationChoiceAppliesToTheDocumentAndIsStoredAsDefault() throws Exception {
+        Indentation tabs = new Indentation(4, true);
+        onEdt(() -> {
+            presenter.setIndentation(tabs);
+            presenter.setSyntax(SyntaxLanguage.GO);
+            presenter.newDocument();
+            return null;
+        });
+        verify(editor, times(2)).setIndentation(tabs);
+        verify(settings).setIndentation(tabs);
+        verify(editor).setLanguage(SyntaxLanguage.GO, true);
+    }
+
+    @Test
+    void formatsJsonAndRefusesOtherOrBrokenDocuments() throws Exception {
+        when(editor.language()).thenReturn(SyntaxLanguage.JSON);
+        when(editor.indentation()).thenReturn(Indentation.DEFAULT);
+        when(editor.text()).thenReturn("{\"a\":[1,2]}");
+        onEdt(() -> { presenter.formatDocument(); return null; });
+        verify(editor).replaceText("{\n  \"a\": [\n    1,\n    2\n  ]\n}\n");
+        when(editor.text()).thenReturn("{\"a\":\n}");
+        onEdt(() -> { presenter.formatDocument(); return null; });
+        verify(view).showError("The document is not valid JSON, so it was left unchanged.\nLine 2: value expected");
+        when(editor.language()).thenReturn(SyntaxLanguage.JAVA);
+        onEdt(() -> { presenter.formatDocument(); return null; });
+        verify(view).showInfo(startsWith("Java documents cannot be formatted yet."));
+        verify(editor, times(1)).replaceText(any());
     }
 
     private static <T> T onEdt(Callable<T> action) throws Exception {
