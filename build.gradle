@@ -29,6 +29,8 @@ dependencies {
     // Theme, Motif look, start-up and XDG helpers shared by all amadeOS applications.
     // With ../amade-commons checked out, settings.gradle builds that checkout instead (composite build).
     implementation 'com.github.amadeos-eu:amade-commons:82d0f99f19'
+    // The text area with syntax colouring, code folding and automatic indentation (BSD 3-Clause).
+    implementation 'com.fifesoft:rsyntaxtextarea:3.6.0'
     runtimeOnly 'ch.qos.logback:logback-classic:1.5.18'
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -55,6 +57,8 @@ jar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+    // Licences of bundled libraries whose terms ask for their notice in every copy (RSyntaxTextArea, BSD).
+    from('packaging/licenses') { into 'META-INF/licenses' }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
@@ -136,6 +140,9 @@ StartupNotify=true
             into new File(stagingDir, "usr/share/doc/amade-pad")
             rename { 'copyright' }
         }
+        // The notices of the libraries bundled in the jar follow the program's own licence.
+        def copyright = new File(stagingDir, "usr/share/doc/amade-pad/copyright")
+        fileTree('packaging/licenses').files.sort().each { copyright << "\n\n" + it.getText('UTF-8') }
 
         // 6. Create Debian package control file
         def controlFile = new File(debianDir, "control")
