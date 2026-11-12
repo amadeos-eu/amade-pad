@@ -95,8 +95,12 @@ tasks.register('deb') {
 
         // 2. Create launcher script
         def launcher = new File(binDir, "amade-pad")
+        // The options all amadeOS programs share (heap, garbage collector) come first from the argument file
+        // amadeos-session installs; the options after it win over them.
         launcher.text = """#!/bin/sh
-exec /usr/bin/java -jar /opt/amade-pad/amade-pad.jar "\$@"
+OPTIONS=/etc/amadeos/java/app.options
+[ -r "\$OPTIONS" ] || OPTIONS=/dev/null
+exec /usr/bin/java "@\$OPTIONS" -jar /opt/amade-pad/amade-pad.jar "\$@"
 """
         launcher.setExecutable(true, false)
 
